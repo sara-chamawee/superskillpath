@@ -79,3 +79,8 @@
 | Giving and Receiving Feedback | LHT22P051 | Constructive Feedback & Mentoring | Learning Hub Thailand | อธิษฐ์กร นิยมเดชาธีรฉัตร (อ.แบท) |
 | Giving and Receiving Feedback | GMA23C009 | ให้ฟีดแบ็กอย่างเข้าใจผู้รับด้วย SPEAK Model (Compassionate Feedback with SPEAK Model) | Good Mind Academy | พญ.พิยะดา หาชัยภูมิ (หมอเอิ้น) |
 | Giving and Receiving Feedback | PRA23C020 | คู่มือผู้จัดการพันธุ์ใหม่: ทักษะการรับและให้ข้อมูลป้อนกลับสำหรับผู้นำ (The Practical Managers Series: Giving and Receiving Feedback for Managers) | The Practical | ดร.รพีรัฐ ธัญวัฒน์พรกุล |
+| Negotiation | NEG25C001 | ศิลปะการเจรจาต่อรองเพื่อผลลัพธ์ที่ Win-Win (The Art of Win-Win Negotiation) | MindDoJo | ภาวินท์ สุทธพงษ์ (อ.พอล) |
+| Negotiation | NEG25C002 | เทคนิคการเจรจาต่อรองสำหรับมืออาชีพ (Professional Negotiation Techniques) | Learning Hub Thailand | ดร.นารา กิตติเมธีกุล |
+| Negotiation | NEG25C003 | การเจรจาต่อรองเชิงกลยุทธ์ในสถานการณ์ที่ซับซ้อน (Strategic Negotiation in Complex Situations) | DeOne Academy | วิภาวดี เผ่าภคะ (อ.ปุ๊) |
+| Negotiation | NEG25C004 | จิตวิทยาการเจรจาต่อรองและการโน้มน้าวใจ (Psychology of Negotiation & Persuasion) | Fastlearn10x | ยศศักดิ์ มงคลปัญญาเลิศ (เอ็ม) |
+| Negotiation | NEG25C005 | เจรจาอย่างไรให้ได้ใจและได้งาน (Negotiation Mastery: Heart & Results) | Creative Talk | สิทธิพงศ์​ ศิริมาศเกษม (เก่ง) |

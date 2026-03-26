@@ -153,10 +153,50 @@ def stream_message(session_id: str, req: SendMessageRequest):
     area_name = skill.assessment_criteria[area_idx].name if area_idx < len(skill.assessment_criteria) else ""
     step_name = StepType(session.current_step).name if session.current_step <= 6 else "WRAP_UP"
 
-    system_prompt = f"""คุณคือ Sorc AI Learning Companion ภาษาไทย ใช้ markdown
-ทักษะ: {skill.name} | ด้าน: {area_name} | ขั้นตอน: {step_name}
-คำนิยาม: {skill.definition[:200]}
-ตอบกระชับ ใช้ตัวอย่างจริง ถามคำถามกระตุ้นการคิด ตอบให้ครบถ้วนทุกประเด็น"""
+    system_prompt = f"""คุณคือ "Sorc" — AI Learning Coach ที่ไม่เหมือนใคร คุณไม่ใช่แชทบอทตอบคำถาม แต่คุณคือโค้ชส่วนตัวที่พาผู้เรียนผ่านประสบการณ์การเรียนรู้แบบใหม่
+
+📅 วันนี้: {datetime.now().strftime('%d %B %Y')}
+
+🌍 บริบทโลกปัจจุบัน (ใช้อ้างอิงเมื่อเหมาะสม):
+- AI และ Automation กำลังเปลี่ยนแปลงวิธีการทำงานทุกอุตสาหกรรม
+- Remote/Hybrid work ทำให้ทักษะการสื่อสารและเจรจาต่อรองสำคัญมากขึ้น
+- องค์กรในไทยและทั่วโลกกำลังเน้น upskilling/reskilling พนักงาน
+- Gen Z เข้าสู่ตลาดแรงงานมากขึ้น ทำให้ต้องปรับวิธีการทำงานร่วมกัน
+- เศรษฐกิจโลกมีความไม่แน่นอน ทักษะการเจรจาและปรับตัวจึงสำคัญมาก
+(อ้างอิงบริบทเหล่านี้เมื่อเกี่ยวข้องกับทักษะที่สอน ทำให้ผู้เรียนรู้สึกว่าสิ่งที่เรียนมีความเกี่ยวข้องกับโลกจริงตอนนี้)
+
+🎯 ทักษะ: {skill.name}
+📍 ด้าน: {area_name} | ขั้นตอน: {step_name}
+📝 คำนิยาม: {skill.definition[:300]}
+
+═══ วิธีการสอนของคุณ ═══
+
+1. **Socratic Method** — ไม่บอกคำตอบตรงๆ แต่ถามคำถามที่ทำให้ผู้เรียน "อ๋อ!" ด้วยตัวเอง
+2. **Storytelling** — เล่าเรื่องจริง เคสจริง สถานการณ์จริงที่เกิดขึ้นในองค์กร ให้ผู้เรียนรู้สึกว่า "เคยเจอแบบนี้!"
+3. **Challenge-Based** — ท้าทายผู้เรียนด้วยโจทย์ที่ยากขึ้นเรื่อยๆ ให้รู้สึกว่ากำลังเติบโต
+4. **Micro-Wins** — ให้ผู้เรียนรู้สึกว่าประสบความสำเร็จเล็กๆ ทุกขั้นตอน
+
+═══ บุคลิกของคุณ ═══
+
+- พูดเหมือนรุ่นพี่ที่เก่งและใจดี ไม่ใช่ครูที่เข้มงวด
+- ใช้ภาษาที่เป็นธรรมชาติ ไม่เป็นทางการเกินไป
+- เมื่อผู้เรียนตอบ ให้ acknowledge สิ่งที่เขาพูดก่อนเสมอ แล้วค่อยต่อยอด
+- ใช้ emoji อย่างเป็นธรรมชาติ (ไม่ยัดทุกประโยค)
+- สร้างความรู้สึก "เราเรียนรู้ด้วยกัน" ไม่ใช่ "ฉันสอน คุณฟัง"
+
+═══ รูปแบบการตอบ ═══
+
+- ใช้ markdown: หัวข้อ, bullet, bold, blockquote
+- ความยาว: 3-6 ย่อหน้า (ไม่สั้นเกินจนไม่มีเนื้อหา ไม่ยาวเกินจนน่าเบื่อ)
+- ทุกข้อความต้องจบด้วย 1 คำถามที่กระตุ้นให้ผู้เรียนคิดและตอบ
+- ถ้าผู้เรียนตอบดี → ชมเฉพาะเจาะจง + ยกระดับด้วยคำถามที่ยากขึ้น
+- ถ้าผู้เรียนตอบไม่ตรง → ไม่บอกว่าผิด แต่ถามคำถามนำให้คิดใหม่
+- แทรก "💡 Insight" หรือ "🔥 Pro Tip" เมื่อมีข้อมูลที่น่าสนใจ
+
+═══ ห้าม ═══
+- ห้ามตอบแบบ FAQ (ถาม-ตอบ สั้นๆ จบ)
+- ห้ามเป็นแค่ textbook ที่อ่านให้ฟัง
+- ห้ามพูดซ้ำๆ เหมือนเดิมทุกข้อความ"""
 
     recent = [{"role": m.role, "content": m.content} for m in session.messages[-6:]]
 
@@ -249,6 +289,152 @@ def assess_skill(req: AssessSkillRequest):
              for c in skill.assessment_criteria]
     return {"assessment": {"overall": "not_passed", "overall_reason": "ยังไม่มีเนื้อหา",
             "areas": areas, "recommendations": ["เพิ่มคอร์สใน SuperPath"]}, "raw": None}
+
+
+# --- Spaced Repetition 2-7-30 Review System ---
+from datetime import datetime, timedelta
+
+# In-memory review schedule store: user_id -> list of review entries
+_review_schedules: dict[str, list[dict]] = {}
+
+class ScheduleReviewRequest(BaseModel):
+    user_id: str
+    skill_id: str
+    skill_name: str
+
+@api.post("/api/reviews/schedule")
+def schedule_review(req: ScheduleReviewRequest):
+    """Schedule 2-7-30 spaced repetition reviews for a completed skill."""
+    now = datetime.now()
+    reviews = [
+        {"day": 2, "date": (now + timedelta(days=2)).isoformat(), "type": "quick_recall",
+         "label": "ทบทวนครั้งที่ 1 (Day 2)", "status": "pending",
+         "description": "ทบทวนแบบ Quick Recall — เขียนสิ่งที่จำได้โดยไม่ดูเนื้อหา"},
+        {"day": 7, "date": (now + timedelta(days=7)).isoformat(), "type": "scenario",
+         "label": "ทบทวนครั้งที่ 2 (Day 7)", "status": "pending",
+         "description": "ทบทวนด้วยสถานการณ์จำลอง — AI จะสร้างโจทย์ให้คุณลองตอบ"},
+        {"day": 30, "date": (now + timedelta(days=30)).isoformat(), "type": "deep_review",
+         "label": "ทบทวนครั้งที่ 3 (Day 30)", "status": "pending",
+         "description": "ทบทวนเชิงลึก — ประเมินทักษะอีกครั้งเพื่อยืนยันความเข้าใจ"},
+    ]
+    entry = {
+        "skill_id": req.skill_id, "skill_name": req.skill_name,
+        "scheduled_at": now.isoformat(), "reviews": reviews,
+    }
+    if req.user_id not in _review_schedules:
+        _review_schedules[req.user_id] = []
+    # Replace existing schedule for same skill
+    _review_schedules[req.user_id] = [
+        e for e in _review_schedules[req.user_id] if e["skill_id"] != req.skill_id
+    ]
+    _review_schedules[req.user_id].append(entry)
+    return {"scheduled": True, "reviews": reviews}
+
+@api.get("/api/reviews/{user_id}")
+def get_reviews(user_id: str):
+    """Get all review schedules for a user."""
+    return {"reviews": _review_schedules.get(user_id, [])}
+
+class StartReviewRequest(BaseModel):
+    user_id: str
+    skill_id: str
+    review_day: int
+
+@api.post("/api/reviews/start")
+def start_review_session(req: StartReviewRequest):
+    """Start a review chat session for a specific review interval."""
+    entries = _review_schedules.get(req.user_id, [])
+    entry = next((e for e in entries if e["skill_id"] == req.skill_id), None)
+    if not entry:
+        raise HTTPException(status_code=404, detail="No review schedule found")
+    review = next((r for r in entry["reviews"] if r["day"] == req.review_day), None)
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+
+    # Start a chat session for the review
+    try:
+        session = app_instance.start_learning(req.user_id, req.skill_id)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    review["status"] = "in_progress"
+    review_type_prompts = {
+        "quick_recall": "นี่คือ Review Session Day 2 (Quick Recall) ให้ผู้เรียนเขียนสิ่งที่จำได้เกี่ยวกับทักษะนี้โดยไม่ดูเนื้อหา แล้วให้ feedback",
+        "scenario": "นี่คือ Review Session Day 7 (Scenario) สร้างสถานการณ์จำลอง 2 ข้อเกี่ยวกับทักษะนี้ให้ผู้เรียนตอบ",
+        "deep_review": "นี่คือ Review Session Day 30 (Deep Review) ประเมินทักษะเชิงลึก ถามคำถามที่ต้องใช้ความเข้าใจระดับสูง",
+    }
+    return {
+        "session_id": str(session.id), "skill_id": req.skill_id,
+        "review_type": review["type"], "review_label": review["label"],
+        "prompt_hint": review_type_prompts.get(review["type"], ""),
+        "messages": [{"role": m.role, "content": m.content} for m in session.messages],
+    }
+
+@api.post("/api/reviews/complete")
+def complete_review(req: StartReviewRequest):
+    """Mark a review as completed."""
+    entries = _review_schedules.get(req.user_id, [])
+    entry = next((e for e in entries if e["skill_id"] == req.skill_id), None)
+    if not entry:
+        raise HTTPException(status_code=404, detail="No review schedule found")
+    review = next((r for r in entry["reviews"] if r["day"] == req.review_day), None)
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    review["status"] = "completed"
+    review["completed_at"] = datetime.now().isoformat()
+    return {"completed": True, "review": review}
+
+
+# --- Fast-forward endpoint ---
+@api.post("/api/chat/{session_id}/fast-forward")
+def fast_forward_session(session_id: str):
+    """Fast-forward through all learning steps, marking all checklist items complete."""
+    try:
+        engine = app_instance.get_chat_engine()
+        session = engine._get_session(session_id)
+        skill = app_instance.get_skill_catalog().get_skill_detail(str(session.skill_id))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    # Mark all checklist items complete
+    completed = []
+    for criteria in skill.assessment_criteria:
+        for item in criteria.checklist_items:
+            app_instance.get_progress_tracker().mark_checklist_item_complete(
+                str(session.user_id), str(item.id)
+            )
+            completed.append(str(item.id))
+
+    # Set session to WRAP_UP
+    session.current_step = 6
+    engine._area_indices[session_id] = len(skill.assessment_criteria) - 1
+
+    # Add wrap-up message
+    from src.models.chat import ChatMessage
+    from uuid import uuid4
+    wrap_msg = ChatMessage(
+        session_id=session.id, role="assistant",
+        content=(
+            f"🎉 ยินดีด้วยครับ! คุณผ่าน checklist ครบทุกข้อของทักษะ **{skill.name}** แล้ว!\n\n"
+            f"**สิ่งที่เราเรียนรู้ด้วยกัน:**\n"
+            + "\n".join(f"✅ {c.name}" for c in skill.assessment_criteria)
+            + f"\n\n📅 **แนะนำ:** ตั้งเวลาทบทวนตามหลัก 2-7-30 เพื่อให้จำได้ยาวนาน\n"
+            f"กดปุ่ม 'ตั้งเวลาทบทวน 2-7-30' ด้านล่างเพื่อเริ่มต้นครับ"
+        ),
+        id=uuid4(), timestamp=datetime.now(),
+    )
+    session.messages.append(wrap_msg)
+
+    progress = app_instance.get_progress_tracker().get_progress(str(session.user_id), skill)
+    return {
+        "completed_items": completed,
+        "message": {"role": "assistant", "content": wrap_msg.content},
+        "progress": {
+            "percent_complete": progress.percent_complete,
+            "completed_checklist_items": progress.completed_checklist_items,
+            "total_checklist_items": progress.total_checklist_items,
+        },
+    }
 
 
 # Serve frontend
