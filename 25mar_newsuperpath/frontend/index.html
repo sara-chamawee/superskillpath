@@ -173,6 +173,7 @@ body{font-family:'IBM Plex Sans Thai','Segoe UI',sans-serif;background:var(--bg)
     <div class="msgs" id="msgs"></div>
     <div class="ci-row">
       <button class="ci-q" onclick="askAI('แนะนำเนื้อหาสำหรับทักษะนี้')">✨ แนะนำเนื้อหา</button>
+      <button class="ci-q" onclick="createSimulation()">🎯 สร้าง Simulation</button>
       <button class="ci-q" onclick="askAI('สร้าง To-Do List 3 ข้อสำหรับฝึกทักษะนี้')">📝 สร้าง To-Do</button>
     </div>
     <div class="ci-row">
@@ -211,25 +212,25 @@ function loadMore(){pg++;loadSkills(true);}
 function onSearch(){clearTimeout(dt);dt=setTimeout(()=>{q=document.getElementById('search').value.trim();loadSkills();},300);}
 
 // OPEN SKILL
-let learningMode=null; // 'courses','scenario','todo'
+let learningMode=null;
+let simulations=[]; // Simulation content type
 
 async function openSkill(id){
   const r=await fetch(`${API}/api/skills/${id}`);sd=await r.json();courses=sd.courses||[];
-  path=[];todos=[];learningMode=null;
+  path=[];todos=[];simulations=[];learningMode=null;
   document.getElementById('cat').style.display='none';document.getElementById('learn').style.display='flex';
   document.getElementById('sb-name').textContent=sd.name;
-  // Hide sidebar initially — show only content + chat (2 columns)
-  document.querySelector('.sb').style.display='none';
-  document.getElementById('ct').style.display='none';
-  // Expand chat to fill
-  const cp=document.getElementById('cp');cp.classList.add('expanded');chatExp=true;
-  document.getElementById('cp-tog').textContent='➡ หด';
+  // Show sidebar + content + chat (3 columns) — content shows skill detail
+  document.querySelector('.sb').style.display='flex';
+  document.getElementById('ct').style.display='';
+  const cp=document.getElementById('cp');cp.classList.remove('expanded');chatExp=false;
+  document.getElementById('cp-tog').textContent='⬅ ขยาย';
   buildSB();
   const cr=await fetch(`${API}/api/chat/start`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:UID,skill_id:id})});
   const cd=await cr.json();sid=cd.session_id;
-  // Render greeting + learning mode picker
   renderMsgs(cd.messages);
   showLearningModePicker();
+  showOverview(); // Show skill detail in content area
   updateProg();
 }
 
@@ -275,15 +276,30 @@ async function pickMode(mode){
   }
 }
 
-// SIDEBAR
+// SIDEBAR — sorted by 10-20-70 model
 function buildSB(){
   let h='';const inP=path.filter(p=>p.in);
-  if(inP.length){h+=`<div class="sb-sec">เนื้อหาใน SuperPath (${inP.length})</div>`;
+  // Header: 10-20-70 model
+  h+='<div style="padding:14px 20px 6px;font-size:.6em;color:rgba(255,255,255,.3);line-height:1.5">เส้นทางการเรียนรู้ตามโมเดล 10-20-70</div>';
+  // 10% — Courses (Formal Learning)
+  h+=`<div class="sb-sec" style="color:#5dade2">📚 10% เรียนรู้จากเนื้อหา${inP.length?' ('+inP.length+')':''}</div>`;
+  if(inP.length){
     inP.forEach(p=>{const c=courses[p.idx];if(!c)return;
-      h+=`<div class="si" id="si-c${p.idx}" onclick="collapseChat();viewCourse(${p.idx})"><div class="dot c"></div><div class="inf"><div class="tp">คอร์สออนไลน์</div><div class="nm">${c.name}</div><div class="du">${c.duration||''}</div></div></div>`;});}
-  if(todos.length){h+=`<div class="sb-sec">To-Do List (${todos.length})</div>`;
-    todos.forEach((t,i)=>{h+=`<div class="si" id="si-t${i}" onclick="collapseChat();viewTodo(${i})"><div class="dot t"></div><div class="inf"><div class="tp">To-Do</div><div class="nm">${t.title}</div><div class="du">${t.ok?'✅ Verified':'⏳ รอส่งงาน'}</div></div></div>`;});}
-  if(!inP.length&&!todos.length){h+='<div style="padding:24px 20px;font-size:.78em;color:rgba(255,255,255,.35);text-align:center;line-height:1.6">ยังไม่มีเนื้อหาใน SuperPath<br><br>💬 คุยกับ AI Coach เพื่อให้แนะนำเนื้อหา</div>';}
+      h+=`<div class="si" id="si-c${p.idx}" onclick="collapseChat();viewCourse(${p.idx})"><div class="dot c"></div><div class="inf"><div class="tp">Course</div><div class="nm">${c.name}</div><div class="du">${c.duration||''}</div></div></div>`;});
+  } else { h+='<div style="padding:8px 20px;font-size:.7em;color:rgba(255,255,255,.25)">ยังไม่มีคอร์ส</div>'; }
+  // 20% — Simulation (Social Learning)
+  h+=`<div class="sb-sec" style="color:#e74c3c">🎯 20% เรียนรู้จากสถานการณ์${simulations.length?' ('+simulations.length+')':''}</div>`;
+  if(simulations.length){
+    simulations.forEach((s,i)=>{const rc={passed:'#27ae60',failed:'#e74c3c',reviewed:'#f39c12',reviewing:'#95a5b6'};
+      const rl={passed:'✅ ผ่าน',failed:'❌ ไม่ผ่าน',reviewed:'📝 ประเมินแล้ว',reviewing:'⏳ กำลังประเมิน'};
+      const st=s.done?(rl[s.result]||'📝 ตอบแล้ว'):'⏳ รอตอบ';
+      h+=`<div class="si" id="si-s${i}" onclick="collapseChat();viewSim(${i})"><div class="dot" style="background:${s.done?(rc[s.result]||'#f39c12'):'#e74c3c'}"></div><div class="inf"><div class="tp">Simulation · ${s.criteriaName||'ทักษะโดยรวม'}</div><div class="nm">${s.title}</div><div class="du">${st}</div></div></div>`;});
+  } else { h+='<div style="padding:8px 20px;font-size:.7em;color:rgba(255,255,255,.25)">ยังไม่มี Simulation</div>'; }
+  // 70% — To-Do (Experiential Learning)
+  h+=`<div class="sb-sec" style="color:#f5b041">🛠️ 70% เรียนรู้จากการลงมือทำ${todos.length?' ('+todos.length+')':''}</div>`;
+  if(todos.length){
+    todos.forEach((t,i)=>{h+=`<div class="si" id="si-t${i}" onclick="collapseChat();viewTodo(${i})"><div class="dot t"></div><div class="inf"><div class="tp">To-Do</div><div class="nm">${t.title}</div><div class="du">${t.ok?'✅ Verified':'⏳ รอส่งงาน'}</div></div></div>`;});
+  } else { h+='<div style="padding:8px 20px;font-size:.7em;color:rgba(255,255,255,.25)">ยังไม่มี To-Do</div>'; }
   document.getElementById('sb-list').innerHTML=h;
 }
 
@@ -414,6 +430,62 @@ async function sendMsg(){const inp=document.getElementById('ci'),msg=inp.value.t
         th+=`<div class="suggest-item"><span class="s-name">${t.substring(0,100)}</span>
           <button class="btn-add ${ex?'added':''}" id="todo-add-${idx}" data-title="${s.replace(/"/g,'&quot;')}" data-desc="${t.replace(/"/g,'&quot;')}" onclick="addT(this.dataset.title,this.dataset.desc);this.textContent='✓';this.classList.add('added')">${ex?'✓':'+ เพิ่ม'}</button></div>`;});
       th+='</div></div>';el.innerHTML+=th;}
+    // Simulation detection — auto-add only if no pending (unpassed) simulation
+    const isSim=msg.includes('สถานการณ์')||msg.includes('Simulation')||msg.includes('simulation')||msg.includes('จำลอง')||
+      full.includes('สถานการณ์จำลอง')||full.includes('สมมติว่า')||learningMode==='scenario';
+    const lastSim=simulations.length?simulations[simulations.length-1]:null;
+    const canAddSim=!simulations.length||(lastSim&&lastSim.result==='passed');
+    if(isSim && full.length>100 && canAddSim){
+      const simTitle=sd.name+' — Simulation '+(simulations.length+1);
+      addSim(simTitle, full);
+      el.innerHTML+=`<div class="m assistant"><div class="suggest-card" style="border-color:#fcc"><h5>🎯 Simulation เพิ่มเข้า SuperPath แล้ว!</h5>
+        <p style="font-size:.78em;color:var(--text2);margin:4px 0">คุณสามารถตอบได้เลยในแชท หรือกดที่ sidebar เพื่อดูรายละเอียดและตอบ</p></div></div>`;
+    } else if(isSim && full.length>100 && !canAddSim){
+      el.innerHTML+=`<div class="m assistant"><div class="suggest-card" style="border-color:#f39c12"><h5>⚠️ ต้องผ่าน Simulation ก่อนหน้าก่อน</h5>
+        <p style="font-size:.78em;color:var(--text2);margin:4px 0">กรุณาตอบ "${lastSim.title}" ให้ผ่านก่อน จึงจะสร้าง Simulation ใหม่ได้</p></div></div>`;
+    }
+    // Check if user answered a simulation via chat
+    if(simulations.length && !isSim){
+      const pendingSim=simulations.find(s=>!s.done||(s.done&&s.result!=='passed'));
+      if(pendingSim && msg.length>20){
+        // Add attempt to history
+        if(!pendingSim.attempts)pendingSim.attempts=[];
+        pendingSim.attempts.push({answer:msg,timestamp:new Date().toLocaleString('th-TH'),feedback:full});
+        pendingSim.answer=msg;
+        pendingSim.lastFeedback=full;
+        pendingSim.done=true;
+        // Check AI response for pass/fail
+        const fl=full.toLowerCase();
+        if(fl.includes('ผ่าน')||fl.includes('ดีมาก')||fl.includes('ถูกต้อง')||fl.includes('เยี่ยม')||fl.includes('ยอดเยี่ยม')){
+          pendingSim.result='passed';
+          pendingSim.attempts[pendingSim.attempts.length-1].result='passed';
+          pendingSim.attempts[pendingSim.attempts.length-1].feedback=full;
+        } else if(fl.includes('ไม่ผ่าน')||fl.includes('ยังไม่')||fl.includes('ควรปรับ')||fl.includes('ลองใหม่')){
+          pendingSim.result='failed';
+          pendingSim.attempts[pendingSim.attempts.length-1].result='failed';
+          pendingSim.attempts[pendingSim.attempts.length-1].feedback=full;
+          pendingSim.done=false;
+        } else {
+          pendingSim.result='reviewed';
+          pendingSim.attempts[pendingSim.attempts.length-1].result='reviewed';
+          pendingSim.attempts[pendingSim.attempts.length-1].feedback=full;
+        }
+        pendingSim.lastFeedback=full;
+        buildSB();
+        // Always refresh viewSim after result update
+        const simIdx=simulations.indexOf(pendingSim);
+        if(simIdx>=0){
+          // Collapse chat to show content area with results
+          collapseChat();
+          setTimeout(()=>viewSim(simIdx),200);
+        }
+        const resultMsg=pendingSim.result==='passed'?'✅ ผ่าน Simulation! สามารถสร้าง Simulation ใหม่ได้แล้ว'
+          :pendingSim.result==='failed'?'❌ ยังไม่ผ่าน — ลองตอบใหม่ได้เลย':'📝 AI ประเมินแล้ว';
+        el.innerHTML+=`<div class="m assistant"><div class="suggest-card" style="border-color:${pendingSim.result==='passed'?'#27ae60':'#f39c12'}">
+          <h5>${resultMsg}</h5>
+          <p style="font-size:.78em;color:var(--text2)">${pendingSim.title} (ตอบครั้งที่ ${pendingSim.attempts.length})</p></div></div>`;
+      }
+    }
     el.scrollTop=99999;
   }catch(e){document.getElementById(aiId).innerHTML='<span style="color:var(--accent)">เกิดข้อผิดพลาด</span>';}
   document.getElementById('cs').disabled=false;inp.focus();updateProg();}
@@ -424,12 +496,95 @@ function addAllTodos(btn){
 }
 function addC(i){let p=path.find(x=>x.idx===i);if(!p)path.push({type:'course',idx:i,name:courses[i].name,in:true});else p.in=true;buildSB();}
 function addT(title,desc){if(!todos.find(t=>t.title===title)){todos.push({title,desc,ok:false,file:null});buildSB();}}
+function createSimulation(){
+  // Pick the next criteria that hasn't been tested yet
+  const testedAreas=simulations.map(s=>s.criteriaIdx).filter(x=>x!=null);
+  const nextIdx=sd.assessment_criteria?sd.assessment_criteria.findIndex((_,i)=>!testedAreas.includes(i)):-1;
+  const area=nextIdx>=0&&sd.assessment_criteria?sd.assessment_criteria[nextIdx]:null;
+  const areaPrompt=area?` โดยเน้นทดสอบด้าน "${area.name}"`:' โดยเน้นทดสอบทักษะโดยรวม';
+  askAI(`สร้างสถานการณ์จำลอง (Simulation) 1 ข้อสำหรับทักษะ ${sd.name}${areaPrompt} ให้เป็นสถานการณ์ที่เหมือนจริงในการทำงาน แล้วถามคำถามให้ฉันตอบ`);
+}
+function addSim(title,scenario){
+  if(!simulations.find(s=>s.title===title)){
+    // Assign criteria based on which hasn't been tested
+    const testedAreas=simulations.map(s=>s.criteriaIdx).filter(x=>x!=null);
+    const nextIdx=sd.assessment_criteria?sd.assessment_criteria.findIndex((_,i)=>!testedAreas.includes(i)):-1;
+    const area=nextIdx>=0&&sd.assessment_criteria?sd.assessment_criteria[nextIdx]:null;
+    simulations.push({title,scenario,done:false,answer:'',result:null,attempts:[],
+      criteriaIdx:nextIdx>=0?nextIdx:null,
+      criteriaName:area?area.name:'ทักษะโดยรวม'});
+    buildSB();
+  }
+}
+function addSimFromChat(btn){
+  addSim(btn.dataset.title, btn.dataset.scenario);
+}
+function viewSim(i){
+  collapseChat();document.querySelectorAll('.si').forEach(e=>e.classList.remove('active'));
+  const el=document.getElementById('si-s'+i);if(el)el.classList.add('active');
+  const s=simulations[i];if(!s)return;
+  const rc={passed:'var(--green)',failed:'var(--accent)',reviewed:'#f39c12'};
+  const rl={passed:'✅ ผ่าน',failed:'❌ ไม่ผ่าน',reviewed:'📝 ประเมินแล้ว',reviewing:'⏳ กำลังประเมิน'};
+  const statusPill=s.done?`<span class="pill" style="background:${s.result==='passed'?'#e8f8f0':'#fde8e8'};color:${rc[s.result]||'#f39c12'}">${rl[s.result]||'📝 ตอบแล้ว'}</span>`
+    :'<span class="pill pill-purple">⏳ รอตอบ</span>';
+  document.getElementById('ct').innerHTML=`<div class="ct-head"><div class="bc">← ${sd.name} / Simulation</div><h2>🎯 ${s.title}</h2>
+    <div class="row">${statusPill} <span class="pill pill-purple">📋 ${s.criteriaName||'ทักษะโดยรวม'}</span></div></div>
+    <div class="ct-body">
+    <div class="cl-card" style="border-left:4px solid var(--purple)"><h3>📋 เกณฑ์ที่ทดสอบ: ${s.criteriaName||'ทักษะโดยรวม'}</h3>
+      ${s.criteriaIdx!=null&&sd.assessment_criteria&&sd.assessment_criteria[s.criteriaIdx]?
+        sd.assessment_criteria[s.criteriaIdx].checklist_items.map(it=>`<div style="font-size:.8em;color:var(--text2);padding:3px 0">• ${it.description}</div>`).join('')
+        :'<div style="font-size:.8em;color:var(--text3)">ทดสอบทักษะโดยรวม</div>'}</div>
+    <div class="cl-card" style="border-left:4px solid var(--accent)"><h3>📋 สถานการณ์</h3>
+      <div style="font-size:.85em;color:var(--text2);line-height:1.7">${md(s.scenario)}</div></div>
+    ${s.done&&s.result==='passed'?`<div class="cl-card" style="border-left:4px solid ${rc[s.result]||'#f39c12'}"><h3>${rl[s.result]||'📝'} คำตอบล่าสุด</h3>
+      <div style="font-size:.85em;color:var(--text2);line-height:1.7">${s.answer}</div></div>`
+    :s.done&&s.result==='failed'?`<div class="cl-card" style="border-left:4px solid var(--accent)"><h3>❌ คำตอบล่าสุด (ยังไม่ผ่าน)</h3>
+      <div style="font-size:.85em;color:var(--text2);line-height:1.7;margin-bottom:12px">${s.answer}</div>
+      <textarea id="sim-ans-${i}" style="width:100%;min-height:100px;border:1.5px solid var(--border);border-radius:8px;padding:12px;font-family:inherit;font-size:.85em;resize:vertical" placeholder="ลองตอบใหม่..."></textarea>
+      <div style="margin-top:12px;display:flex;gap:10px">
+        <button class="btn btn-primary" onclick="submitSim(${i})">📤 ส่งคำตอบใหม่</button>
+        <button class="btn btn-blue" onclick="askAI('ช่วยให้ hint เพิ่มเติมสำหรับสถานการณ์นี้หน่อย')">💡 ขอ Hint</button>
+      </div></div>`
+    :`<div class="cl-card"><h3>💬 ตอบคำถาม</h3>
+      <textarea id="sim-ans-${i}" style="width:100%;min-height:120px;border:1.5px solid var(--border);border-radius:8px;padding:12px;font-family:inherit;font-size:.85em;resize:vertical" placeholder="พิมพ์คำตอบของคุณ..."></textarea>
+      <div style="margin-top:12px;display:flex;gap:10px">
+        <button class="btn btn-primary" onclick="submitSim(${i})">📤 ส่งคำตอบ</button>
+        <button class="btn btn-blue" onclick="askAI('ช่วยให้ hint สำหรับสถานการณ์นี้หน่อย')">💡 ขอ Hint</button>
+      </div></div>`}
+    ${s.lastFeedback?`<div class="cl-card" style="border-left:4px solid ${s.result==='passed'?'var(--green)':'#f39c12'}"><h3>🤖 ผลการประเมินล่าสุดจาก AI</h3>
+      <div style="font-size:.85em;color:var(--text2);line-height:1.7">${md(s.lastFeedback)}</div></div>`:''}
+    ${s.attempts&&s.attempts.length?`<div class="cl-card"><h3>📊 ประวัติการตอบ (${s.attempts.length} ครั้ง)</h3>
+      ${s.attempts.slice().reverse().map((a,j)=>{const num=s.attempts.length-j;return `<div style="padding:14px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:.8em">
+          <span style="font-weight:600;color:var(--primary)">ครั้งที่ ${num}</span>
+          <div><span style="color:var(--text3);margin-right:8px">${a.timestamp}</span>
+          <span style="padding:2px 8px;border-radius:6px;font-size:.85em;background:${a.result==='passed'?'#e8f8f0':a.result==='failed'?'#fde8e8':'#fef9e7'};color:${a.result==='passed'?'var(--green)':a.result==='failed'?'var(--accent)':'#f39c12'}">${a.result==='passed'?'✅ ผ่าน':a.result==='failed'?'❌ ไม่ผ่าน':'📝 ประเมินแล้ว'}</span></div>
+        </div>
+        <div style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:8px">
+          <div style="font-size:.7em;color:var(--text3);margin-bottom:4px">💬 คำตอบของคุณ:</div>
+          <div style="font-size:.82em;color:var(--text2);line-height:1.5">${a.answer}</div>
+        </div>
+        ${a.feedback?`<div style="background:#f8f6ff;border-radius:8px;padding:10px 12px">
+          <div style="font-size:.7em;color:var(--purple);margin-bottom:4px">🤖 AI Feedback:</div>
+          <div style="font-size:.8em;color:var(--text2);line-height:1.5">${md(a.feedback).substring(0,500)}</div>
+        </div>`:''}</div>`;}).join('')}</div>`:''}
+    </div>`;
+}
+function submitSim(i){
+  const ans=document.getElementById('sim-ans-'+i)?.value||'';
+  if(!simulations[i].attempts)simulations[i].attempts=[];
+  simulations[i].attempts.push({answer:ans,timestamp:new Date().toLocaleString('th-TH'),result:'reviewing',feedback:''});
+  simulations[i].answer=ans;simulations[i].done=true;simulations[i].result='reviewing';
+  simulations[i]._pendingFeedbackIdx=simulations[i].attempts.length-1;
+  buildSB();viewSim(i);
+  askAI(`ฉันตอบสถานการณ์จำลอง "${simulations[i].title}" ว่า: "${ans}" ช่วยประเมินคำตอบหน่อย บอกชัดเจนว่า "ผ่าน" หรือ "ไม่ผ่าน" พร้อมเหตุผล`);
+}
 async function updateProg(){if(!sid)return;const r=await fetch(`${API}/api/chat/${sid}/progress`);const d=await r.json();const p=Math.round(d.percent_complete);
   document.getElementById('sb-bar').style.width=p+'%';document.getElementById('sb-pct').textContent=`${p}% (${d.completed_checklist_items}/${d.total_checklist_items})`;}
 function goHome(){document.getElementById('learn').style.display='none';document.getElementById('cat').style.display='block';
   document.querySelector('.sb').style.display='flex';document.getElementById('ct').style.display='';
   const cp=document.getElementById('cp');cp.classList.remove('expanded');chatExp=false;
-  sid=null;sd=null;path=[];todos=[];learningMode=null;}
+  sid=null;sd=null;path=[];todos=[];simulations=[];learningMode=null;}
 loadSkills();
 </script>
 </body>
