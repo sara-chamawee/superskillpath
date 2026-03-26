@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SuperPath - Personalized Learning</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--primary:#1a3a5c;--accent:#e74c3c;--accent-light:#fff0f0;--green:#27ae60;--purple:#6c5ce7;--bg:#f8f9fb;--card:white;--text:#2c3e50;--text2:#5a6c7d;--text3:#95a5b6;--border:#e8ecf1;--radius:12px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'IBM Plex Sans Thai','Segoe UI',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;font-size:14px;line-height:1.6}
+
+/* NAV */
+.nav{background:white;height:52px;display:flex;align-items:center;padding:0 24px;border-bottom:1px solid var(--border);justify-content:space-between}
+.nav .logo{font-size:1.15em;font-weight:700;color:var(--primary);display:flex;align-items:center;gap:8px}
+.nav .logo span{color:var(--accent)}
+.nav-right{display:flex;align-items:center;gap:16px}
+.nav-btn{padding:6px 16px;border-radius:8px;font-size:.8em;border:1px solid var(--border);background:white;cursor:pointer;color:var(--text2);font-weight:500}
+.nav-btn.active{background:var(--primary);color:white;border-color:var(--primary)}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--purple);color:white;display:flex;align-items:center;justify-content:center;font-size:.75em;font-weight:600}
+
+.main{display:flex;height:calc(100vh - 52px)}
+
+/* CATALOG */
+#cat{width:100%;padding:32px 40px;overflow-y:auto}
+.cat-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}
+.cat-top h1{font-size:1.4em;font-weight:700;color:var(--primary);margin-bottom:4px}
+.cat-top p{font-size:.85em;color:var(--text3)}
+.search{padding:10px 16px;border:1.5px solid var(--border);border-radius:10px;font-size:.85em;width:300px;outline:none;font-family:inherit;transition:border .2s}
+.search:focus{border-color:var(--purple)}
+.cat-info{font-size:.78em;color:var(--text3);margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.card{background:var(--card);border-radius:var(--radius);padding:20px;cursor:pointer;border:1.5px solid transparent;transition:all .2s}
+.card:hover{border-color:var(--purple);box-shadow:0 4px 16px rgba(108,92,231,.1)}
+.card .tag{font-size:.68em;color:var(--purple);background:#f0edff;padding:2px 10px;border-radius:8px;display:inline-block;margin-bottom:8px;font-weight:500}
+.card h3{font-size:.9em;font-weight:600;color:var(--primary);margin-bottom:6px}
+.card .desc{font-size:.78em;color:var(--text2);line-height:1.5;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card .meta{font-size:.72em;color:var(--text3);display:flex;gap:12px}
+.more-btn{display:block;margin:24px auto;padding:10px 32px;background:white;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;font-size:.85em;color:var(--text2);font-family:inherit}
+
+/* LEARN VIEW */
+#learn{display:none;width:100%}
+
+/* SIDEBAR */
+.sb{width:280px;min-width:280px;background:var(--primary);overflow-y:auto;display:flex;flex-direction:column}
+.sb-top{padding:20px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sb-top .label{font-size:.65em;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1px;font-weight:600}
+.sb-top h2{font-size:.95em;color:white;margin:6px 0 12px;font-weight:600}
+.sb-bar{background:rgba(255,255,255,.12);border-radius:4px;height:5px;margin-bottom:4px}
+.sb-bar-fill{background:var(--green);height:100%;border-radius:4px;transition:width .4s}
+.sb-pct{font-size:.7em;color:var(--green);font-weight:600}
+.sb-btn{width:100%;padding:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:8px;cursor:pointer;font-size:.8em;color:rgba(255,255,255,.8);font-weight:500;margin-top:12px;font-family:inherit;text-align:left;display:flex;align-items:center;gap:8px}
+.sb-btn:hover{background:rgba(255,255,255,.14)}
+.sb-back{background:none;border:none;cursor:pointer;font-size:.75em;color:rgba(255,255,255,.45);margin-top:8px;font-family:inherit;text-align:left;padding:0}
+.sb-back:hover{color:rgba(255,255,255,.7)}
+.sb-sec{font-size:.6em;color:rgba(255,255,255,.3);font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:16px 20px 6px}
+.si{padding:10px 20px;cursor:pointer;display:flex;gap:10px;align-items:flex-start;border-left:3px solid transparent;transition:all .15s}
+.si:hover{background:rgba(255,255,255,.04)}.si.active{background:rgba(255,255,255,.08);border-left-color:var(--green)}
+.si .dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.si .dot.c{background:#5dade2}.si .dot.t{background:#f5b041}
+.si .inf{flex:1}.si .tp{font-size:.6em;color:rgba(255,255,255,.35);font-weight:500}.si .nm{font-size:.78em;color:rgba(255,255,255,.85);line-height:1.4}.si .du{font-size:.65em;color:rgba(255,255,255,.3);margin-top:2px}
+
+/* CONTENT */
+.ct{flex:1;overflow-y:auto;background:var(--bg)}
+.ct-head{background:white;padding:28px 36px;border-bottom:1px solid var(--border)}
+.ct-head .bc{font-size:.72em;color:var(--text3);margin-bottom:6px;display:flex;align-items:center;gap:4px}
+.ct-head h2{font-size:1.15em;font-weight:700;color:var(--primary);margin-bottom:10px}
+.ct-head .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pill{padding:4px 12px;border-radius:8px;font-size:.72em;font-weight:500}
+.pill-green{background:#e8f8f0;color:var(--green)}
+.pill-purple{background:#f0edff;color:var(--purple)}
+.btn{padding:8px 18px;border-radius:8px;font-size:.8em;font-weight:600;border:none;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--accent);color:white}.btn-primary:hover{background:#c0392b}
+.btn-blue{background:var(--purple);color:white}.btn-blue:hover{background:#5a4bd1}
+.btn-green{background:var(--green);color:white}
+.btn-outline{background:white;color:var(--text2);border:1.5px solid var(--border)}.btn-outline:hover{background:var(--bg)}
+.ct-body{padding:28px 36px}
+
+/* CHECKLIST CARD */
+.cl-card{background:white;border-radius:var(--radius);padding:20px 24px;margin-bottom:16px;border:1px solid var(--border)}
+.cl-card h3{font-size:.88em;font-weight:600;color:var(--primary);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.cl-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f5f6f8}
+.cl-item:last-child{border-bottom:none}
+.cl-check{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.55em;margin-top:2px}
+.cl-check.done{background:var(--green);border-color:var(--green);color:white}
+.cl-text{font-size:.8em;color:var(--text2);line-height:1.5}
+
+/* COURSE CARD */
+.course-card{background:white;border-radius:var(--radius);padding:16px;margin-bottom:12px;display:flex;gap:16px;align-items:center;border:1px solid var(--border);cursor:pointer;transition:all .15s}
+.course-card:hover{border-color:var(--purple);box-shadow:0 2px 8px rgba(108,92,231,.08)}
+.course-thumb{width:110px;height:65px;border-radius:8px;background:linear-gradient(135deg,var(--purple),#a29bfe);display:flex;align-items:center;justify-content:center;color:white;font-size:.6em;text-align:center;flex-shrink:0;padding:6px;font-weight:600;line-height:1.3}
+.course-card h4{font-size:.85em;font-weight:600;color:var(--primary);margin-bottom:3px}
+.course-card .sub{font-size:.75em;color:var(--text3)}
+
+/* CHAT */
+.cp{width:380px;min-width:380px;background:white;border-left:1px solid var(--border);display:flex;flex-direction:column;transition:width .3s,min-width .3s}
+.cp.expanded{position:absolute;right:0;top:52px;bottom:0;width:calc(100% - 280px);min-width:calc(100% - 280px);z-index:50}
+.cp-top{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.cp-top h3{font-size:.9em;font-weight:700;color:var(--primary);flex:1}
+.cp-top .ai-badge{font-size:.65em;background:var(--accent-light);color:var(--accent);padding:3px 8px;border-radius:6px;font-weight:600}
+.cp-toggle{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.7em;color:var(--text3);font-family:inherit}
+.msgs{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
+.m{max-width:88%}.m.assistant{align-self:flex-start}.m.user{align-self:flex-end}
+.mb{padding:12px 16px;border-radius:16px;font-size:.82em;line-height:1.65}
+.m.assistant .mb{background:#f4f6f9;color:var(--text);border-bottom-left-radius:4px}
+.m.assistant .mb h1,.m.assistant .mb h2,.m.assistant .mb h3{font-size:.9em;margin:10px 0 4px;color:var(--primary);font-weight:600}
+.m.assistant .mb p{margin:4px 0}.m.assistant .mb ul,.m.assistant .mb ol{margin:4px 0 4px 18px}.m.assistant .mb li{margin:2px 0}
+.m.assistant .mb strong{color:var(--primary)}.m.assistant .mb code{background:#e8ecf1;padding:1px 5px;border-radius:4px;font-size:.88em}
+.m.user .mb{background:var(--purple);color:white;border-bottom-right-radius:4px}
+.m.assistant{position:relative}
+.tts-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:2px 8px;cursor:pointer;font-size:.7em;margin-top:4px;color:var(--text3);transition:all .15s}
+.tts-btn:hover{background:var(--bg);color:var(--purple);border-color:var(--purple)}
+.suggest-card{background:#f8f6ff;border:1px solid #e8e4ff;border-radius:var(--radius);padding:14px;margin-top:10px}
+.suggest-card h5{font-size:.78em;color:var(--purple);margin-bottom:8px;font-weight:600}
+.suggest-item{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f0edff;font-size:.78em;gap:8px}
+.suggest-item:last-child{border-bottom:none}
+.suggest-item .s-name{color:var(--text);flex:1;line-height:1.4}
+.suggest-item .s-meta{color:var(--text3);font-size:.88em}
+.suggest-item .btn-add{background:var(--purple);color:white;border:none;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:.82em;white-space:nowrap;font-family:inherit;font-weight:500}
+.suggest-item .btn-add.added{background:var(--green)}
+.ci-row{padding:10px 20px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center}
+.ci-q{font-size:.68em;background:#f8f6ff;color:var(--purple);padding:5px 10px;border-radius:8px;cursor:pointer;white-space:nowrap;border:1px solid #e8e4ff;font-family:inherit;font-weight:500}
+.ci-q:hover{background:#f0edff}
+.ci-in{flex:1;padding:10px 16px;border:1.5px solid var(--border);border-radius:24px;font-size:.82em;outline:none;background:var(--bg);font-family:inherit}
+.ci-in:focus{border-color:var(--purple);background:white}
+.ci-s{width:36px;height:36px;border-radius:50%;background:var(--purple);border:none;color:white;cursor:pointer;font-size:.95em;display:flex;align-items:center;justify-content:center}
+.ci-s:disabled{background:#d5d8dc;cursor:not-allowed}
+.ld{text-align:center;padding:48px;color:var(--text3);font-size:.88em}
+.todo-card{background:white;border-radius:var(--radius);padding:20px;margin-bottom:16px;border:2px dashed #f0c040}
+.todo-card h3{font-size:.88em;color:#e67e22;margin-bottom:6px;font-weight:600}
+.todo-card p{font-size:.8em;color:var(--text2);line-height:1.5;margin-bottom:12px}
+.mode-btn{display:flex;align-items:center;gap:14px;padding:14px 18px;background:white;border:1.5px solid var(--border);border-radius:var(--radius);cursor:pointer;text-align:left;font-family:inherit;transition:all .2s;font-size:.85em;color:var(--text)}
+.mode-btn:hover{border-color:var(--purple);background:#f8f6ff;box-shadow:0 2px 8px rgba(108,92,231,.1)}
+.mode-btn .mode-icon{font-size:1.6em;flex-shrink:0}
+.mode-btn strong{color:var(--primary);display:block;margin-bottom:2px}
+.mode-btn .mode-desc{font-size:.82em;color:var(--text3);line-height:1.4}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="logo"><span>✦</span> SuperPath</div>
+  <div class="nav-right">
+    <button class="nav-btn" onclick="goHome()">← ย้อนกลับ</button>
+    <button class="nav-btn active">Skills</button>
+    <button class="nav-btn">บันทึก</button>
+    <div class="avatar">C</div>
+  </div>
+</nav>
+<div class="main">
+
+<!-- CATALOG -->
+<div id="cat">
+  <div class="cat-top"><div><h1>เลือกทักษะที่ต้องการพัฒนา</h1><p>เลือกทักษะแล้ว AI จะพาคุณสร้างเส้นทางการเรียนรู้</p></div>
+    <input class="search" id="search" placeholder="🔍 ค้นหาทักษะ..." oninput="onSearch()"></div>
+  <div class="cat-info" id="cat-info"></div>
+  <div class="grid" id="catalog"><div class="ld">กำลังโหลด...</div></div>
+  <button class="more-btn" id="more" style="display:none" onclick="loadMore()">โหลดเพิ่ม</button>
+</div>
+
+<!-- LEARN -->
+<div id="learn">
+  <div class="sb"><div class="sb-top">
+    <div class="label">SuperPath</div><h2 id="sb-name">-</h2>
+    <div class="sb-bar"><div class="sb-bar-fill" id="sb-bar" style="width:0%"></div></div>
+    <div class="sb-pct" id="sb-pct">0%</div>
+    <button class="sb-btn" onclick="showOverview()">📋 ดูภาพรวมทักษะ</button>
+    <button class="sb-back" onclick="goHome()">← ย้อนกลับ</button>
+  </div><div id="sb-list"></div></div>
+  <div class="ct" id="ct"></div>
+  <div class="cp" id="cp">
+    <div class="cp-top"><span style="font-size:1.1em">✨</span><h3>AI Coach</h3><span class="ai-badge">Sorc AI</span>
+      <button class="cp-toggle" id="cp-tog" onclick="toggleChat()">⬅ ขยาย</button></div>
+    <div class="msgs" id="msgs"></div>
+    <div class="ci-row">
+      <button class="ci-q" onclick="askAI('แนะนำเนื้อหาสำหรับทักษะนี้')">✨ แนะนำเนื้อหา</button>
+      <button class="ci-q" onclick="askAI('สร้าง To-Do List 3 ข้อสำหรับฝึกทักษะนี้')">📝 สร้าง To-Do</button>
+    </div>
+    <div class="ci-row">
+      <input class="ci-in" id="ci" placeholder="คุยกับ AI Coach ได้เลย..." onkeydown="if(event.key==='Enter')sendMsg()">
+      <button class="ci-s" id="cs" onclick="sendMsg()">➤</button>
+    </div>
+  </div>
+</div>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+const API='',UID='user-'+Math.random().toString(36).substr(2,6);
+let sid=null,sd=null,courses=[],pg=1,q='',tot=0,dt=null,path=[],todos=[],chatExp=false;
+function md(t){try{return marked.parse(t||'');}catch(e){return t;}}
+function toggleChat(){chatExp=!chatExp;const c=document.getElementById('cp'),t=document.getElementById('ct'),b=document.getElementById('cp-tog');
+  if(chatExp){c.classList.add('expanded');t.style.display='none';b.textContent='➡ หด';}
+  else{c.classList.remove('expanded');t.style.display='';b.textContent='⬅ ขยาย';}}
+function expandChat(){if(!chatExp)toggleChat();}
+function collapseChat(){if(chatExp)toggleChat();}
+
+// CATALOG
+async function loadSkills(ap=false){
+  if(!ap){pg=1;document.getElementById('catalog').innerHTML='<div class="ld">กำลังโหลด...</div>';}
+  const r=await fetch(`${API}/api/skills?q=${encodeURIComponent(q)}&page=${pg}&limit=20`);const d=await r.json();tot=d.total;
+  document.getElementById('cat-info').textContent=`แสดง ${Math.min(pg*20,tot)} จาก ${tot} ทักษะ`;
+  const h=d.skills.map(s=>`<div class="card" onclick="openSkill('${s.id}')">
+    ${s.domain?`<span class="tag">${s.domain}</span>`:''}<h3>${s.name}</h3>
+    <div class="desc">${s.definition}</div>
+    <div class="meta"><span>📚 ${s.num_areas} ด้าน</span><span>✅ ${s.num_checklist_items} items</span></div></div>`).join('');
+  if(ap)document.getElementById('catalog').innerHTML+=h;
+  else document.getElementById('catalog').innerHTML=h||'<div class="ld">ไม่พบทักษะ</div>';
+  document.getElementById('more').style.display=pg*20<tot?'block':'none';
+}
+function loadMore(){pg++;loadSkills(true);}
+function onSearch(){clearTimeout(dt);dt=setTimeout(()=>{q=document.getElementById('search').value.trim();loadSkills();},300);}
+
+// OPEN SKILL
+let learningMode=null; // 'courses','scenario','todo'
+
+async function openSkill(id){
+  const r=await fetch(`${API}/api/skills/${id}`);sd=await r.json();courses=sd.courses||[];
+  path=[];todos=[];learningMode=null;
+  document.getElementById('cat').style.display='none';document.getElementById('learn').style.display='flex';
+  document.getElementById('sb-name').textContent=sd.name;
+  // Hide sidebar initially — show only content + chat (2 columns)
+  document.querySelector('.sb').style.display='none';
+  document.getElementById('ct').style.display='none';
+  // Expand chat to fill
+  const cp=document.getElementById('cp');cp.classList.add('expanded');chatExp=true;
+  document.getElementById('cp-tog').textContent='➡ หด';
+  buildSB();
+  const cr=await fetch(`${API}/api/chat/start`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:UID,skill_id:id})});
+  const cd=await cr.json();sid=cd.session_id;
+  // Render greeting + learning mode picker
+  renderMsgs(cd.messages);
+  showLearningModePicker();
+  updateProg();
+}
+
+function showLearningModePicker(){
+  const el=document.getElementById('msgs');
+  el.innerHTML+=`<div class="m assistant"><div class="mb">
+    <p style="margin-bottom:12px"><strong>คุณชอบเรียนรู้แบบไหนครับ?</strong> เลือกรูปแบบที่เหมาะกับคุณ:</p>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+    <button class="mode-btn" onclick="pickMode('courses')">
+      <span class="mode-icon">📚</span>
+      <div><strong>เรียนคอร์สก่อน</strong><div class="mode-desc">ดูเนื้อหาที่แนะนำ เรียนตามลำดับ</div></div>
+    </button>
+    <button class="mode-btn" onclick="pickMode('scenario')">
+      <span class="mode-icon">🎯</span>
+      <div><strong>สรุปสิ่งที่ควรรู้ แล้วจำลองสถานการณ์</strong><div class="mode-desc">AI สรุปให้ แล้วถามคำถามจากสถานการณ์จริง</div></div>
+    </button>
+    <button class="mode-btn" onclick="pickMode('todo')">
+      <span class="mode-icon">🛠️</span>
+      <div><strong>ลองลงมือทำจริง</strong><div class="mode-desc">AI สร้าง To-Do List ให้ทำแล้วส่งงาน</div></div>
+    </button>
+  </div></div>`;
+  el.scrollTop=99999;
+}
+
+async function pickMode(mode){
+  learningMode=mode;
+  // Show sidebar
+  document.querySelector('.sb').style.display='flex';
+  document.getElementById('ct').style.display='';
+
+  const modeLabels={courses:'📚 เรียนคอร์สก่อน',scenario:'🎯 จำลองสถานการณ์',todo:'🛠️ ลงมือทำจริง'};
+  const el=document.getElementById('msgs');
+  el.innerHTML+=`<div class="m user"><div class="mb">${modeLabels[mode]}</div></div>`;
+  el.scrollTop=99999;
+
+  if(mode==='courses'){
+    askAI(`ฉันเลือกเรียนแบบ "เรียนคอร์สก่อน" สำหรับทักษะ ${sd.name} ช่วยแนะนำคอร์สเรียนที่เหมาะสมให้หน่อย พร้อมเหตุผลว่าทำไมถึงแนะนำ`);
+  } else if(mode==='scenario'){
+    askAI(`ฉันเลือกเรียนแบบ "สรุปสิ่งที่ควรรู้ แล้วจำลองสถานการณ์" สำหรับทักษะ ${sd.name} ช่วยสรุปสิ่งสำคัญที่ควรรู้ก่อน แล้วสร้างสถานการณ์จำลอง 1 ข้อให้ฉันลองตอบ`);
+  } else {
+    askAI(`ฉันเลือกเรียนแบบ "ลงมือทำจริง" สำหรับทักษะ ${sd.name} ช่วยสร้าง To-Do List 3-5 ข้อที่ฉันสามารถลงมือทำได้จริง แต่ละข้อระบุสิ่งที่ต้องทำชัดเจน`);
+  }
+}
+
+// SIDEBAR
+function buildSB(){
+  let h='';const inP=path.filter(p=>p.in);
+  if(inP.length){h+=`<div class="sb-sec">เนื้อหาใน SuperPath (${inP.length})</div>`;
+    inP.forEach(p=>{const c=courses[p.idx];if(!c)return;
+      h+=`<div class="si" id="si-c${p.idx}" onclick="collapseChat();viewCourse(${p.idx})"><div class="dot c"></div><div class="inf"><div class="tp">คอร์สออนไลน์</div><div class="nm">${c.name}</div><div class="du">${c.duration||''}</div></div></div>`;});}
+  if(todos.length){h+=`<div class="sb-sec">To-Do List (${todos.length})</div>`;
+    todos.forEach((t,i)=>{h+=`<div class="si" id="si-t${i}" onclick="collapseChat();viewTodo(${i})"><div class="dot t"></div><div class="inf"><div class="tp">To-Do</div><div class="nm">${t.title}</div><div class="du">${t.ok?'✅ Verified':'⏳ รอส่งงาน'}</div></div></div>`;});}
+  if(!inP.length&&!todos.length){h+='<div style="padding:24px 20px;font-size:.78em;color:rgba(255,255,255,.35);text-align:center;line-height:1.6">ยังไม่มีเนื้อหาใน SuperPath<br><br>💬 คุยกับ AI Coach เพื่อให้แนะนำเนื้อหา</div>';}
+  document.getElementById('sb-list').innerHTML=h;
+}
+
+// CENTER
+function showOverview(){
+  collapseChat();document.querySelectorAll('.si').forEach(e=>e.classList.remove('active'));
+  let h=`<div class="ct-head"><div class="bc">← ${sd.domain||'Skill'} / ${sd.name}</div><h2>${sd.name}</h2>
+    <div class="row">${sd.assessment_type?`<span class="pill pill-green">${sd.assessment_type}</span>`:''}
+    <span class="pill pill-purple">📚 ${sd.assessment_criteria?sd.assessment_criteria.length:0} ด้าน</span>
+    <button class="btn btn-primary" onclick="expandChat();document.getElementById('ci').focus()">💬 เรียนกับ AI</button>
+    ${courses.length?`<button class="btn btn-blue" onclick="showExplore()">🔍 สำรวจเนื้อหา (${courses.length})</button>`:''}
+    <button class="btn btn-green" onclick="assessSkill()">🎯 ประเมินทักษะ</button></div></div>
+    <div class="ct-body"><div style="color:var(--text2);line-height:1.7;margin-bottom:24px">${sd.definition}</div>`;
+  if(sd.assessment_criteria&&sd.assessment_criteria.length){
+    sd.assessment_criteria.forEach((a,i)=>{
+      h+=`<div class="cl-card"><h3><span style="color:var(--purple)">●</span> ${a.name}</h3>`;
+      a.checklist_items.forEach(it=>{h+=`<div class="cl-item"><div class="cl-check">-</div><div class="cl-text">${it.description}</div></div>`;});
+      h+='</div>';});}
+  h+='</div>';document.getElementById('ct').innerHTML=h;
+}
+
+function showExplore(){
+  let h=`<div class="ct-head"><div class="bc">← ${sd.name} / สำรวจเนื้อหา</div><h2>🔍 เนื้อหาทั้งหมด</h2>
+    <div class="row"><span class="pill pill-purple">${courses.length} คอร์ส</span>
+    <button class="btn btn-outline" onclick="showOverview()">← กลับ</button></div></div><div class="ct-body">
+    <p style="color:var(--text3);margin-bottom:20px;font-size:.85em">เลือกเนื้อหาที่ต้องการเพิ่มเข้า SuperPath</p>`;
+  courses.forEach((c,i)=>{const inP=path.find(p=>p.idx===i&&p.in);
+    h+=`<div class="course-card"><div class="course-thumb">${c.provider||'📹'}</div>
+      <div style="flex:1"><h4>${c.name}</h4><div class="sub">👤 ${c.instructor} ${c.duration?'· ⏱ '+c.duration:''}</div></div>
+      <button id="exp-${i}" class="btn ${inP?'btn-green':'btn-blue'}" style="font-size:.72em" onclick="toggleExp(${i})">${inP?'✓ อยู่ใน Path':'+ เพิ่ม'}</button></div>`;});
+  h+='</div>';document.getElementById('ct').innerHTML=h;
+}
+function toggleExp(i){let p=path.find(x=>x.idx===i);if(p)p.in=!p.in;else{path.push({type:'course',idx:i,name:courses[i].name,in:true});p=path.find(x=>x.idx===i);}
+  const b=document.getElementById('exp-'+i);if(b){b.className='btn '+(p.in?'btn-green':'btn-blue');b.style.fontSize='.72em';b.textContent=p.in?'✓ อยู่ใน Path':'+ เพิ่ม';}buildSB();}
+
+function viewCourse(i){document.querySelectorAll('.si').forEach(e=>e.classList.remove('active'));
+  const el=document.getElementById('si-c'+i);if(el)el.classList.add('active');const c=courses[i];if(!c)return;
+  const inP=path.find(p=>p.idx===i&&p.in);
+  document.getElementById('ct').innerHTML=`<div class="ct-head"><div class="bc">← ${sd.name} / คอร์ส</div><h2>${c.name}</h2>
+    <div class="row"><span class="pill pill-purple">คอร์สออนไลน์</span>${c.duration?`<span class="pill pill-green">⏱ ${c.duration}</span>`:''}
+    <button class="btn ${inP?'btn-green':'btn-blue'}" style="font-size:.78em" onclick="toggleExp(${i});viewCourse(${i})">${inP?'✓ อยู่ใน SuperPath':'+ เพิ่มใน SuperPath'}</button></div></div>
+    <div class="ct-body"><div class="course-card" style="cursor:default"><div class="course-thumb" style="width:160px;height:95px;font-size:.75em">${c.provider||'📹'}</div>
+    <div><h4>${c.name}</h4><div class="sub">👤 ผู้สอน: ${c.instructor}</div><div class="sub">🏢 ${c.provider}</div></div></div>
+    <button class="btn btn-primary" style="margin-top:16px" onclick="askAI('อธิบายเนื้อหาคอร์ส ${c.name} ให้หน่อย')">💬 ถาม AI เกี่ยวกับคอร์สนี้</button></div>`;}
+
+function viewTodo(i){document.querySelectorAll('.si').forEach(e=>e.classList.remove('active'));
+  const el=document.getElementById('si-t'+i);if(el)el.classList.add('active');const t=todos[i];if(!t)return;
+  document.getElementById('ct').innerHTML=`<div class="ct-head"><div class="bc">← ${sd.name} / To-Do</div><h2>📝 ${t.title}</h2>
+    <div class="row"><span class="pill ${t.ok?'pill-green':'pill-purple'}">${t.ok?'✅ Verified':'⏳ รอส่งงาน'}</span></div></div>
+    <div class="ct-body"><div class="todo-card"><h3>รายละเอียด</h3><p>${t.desc}</p></div>
+    <div class="todo-card"><h3>📎 ส่งงาน</h3><p>แนบไฟล์งานเพื่อให้ AI ตรวจสอบ</p>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><input type="file" id="tf${i}" style="font-size:.8em" onchange="todos[${i}].file=this.files[0]?.name;document.getElementById('vb${i}').disabled=false">
+    <button class="btn btn-primary" id="vb${i}" onclick="verifyTodo(${i})" disabled>🤖 ให้ AI ตรวจ</button></div>
+    ${t.ok?'<div style="margin-top:14px;padding:14px;background:#e8f8f0;border-radius:8px;font-size:.82em;color:var(--green)">✅ AI ตรวจแล้ว: ผ่านเกณฑ์</div>':''}</div></div>`;}
+function verifyTodo(i){askAI(`ตรวจงาน To-Do "${todos[i].title}" ไฟล์: ${todos[i].file||'ไม่มี'}`);todos[i].ok=true;buildSB();viewTodo(i);}
+
+// ASSESS
+async function assessSkill(){
+  const inP=path.filter(p=>p.in);const cc=inP.map(p=>courses[p.idx]?.name).filter(Boolean);const ct=todos.filter(t=>t.ok).map(t=>t.title);
+  document.getElementById('ct').innerHTML=`<div class="ct-head"><h2>🎯 กำลังประเมิน...</h2></div><div class="ct-body"><div class="ld">🤖 AI กำลังเทียบผลการเรียนกับเกณฑ์...</div></div>`;
+  try{const r=await fetch(`${API}/api/assess-skill`,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({user_id:UID,skill_id:sd.id,completed_courses:cc,completed_todos:ct})});const d=await r.json();let a=d.assessment;
+    if(typeof a==='string'){try{let c=a.replace(/^```\w*\n?/,'').replace(/\n?```$/,'').trim();a=JSON.parse(c);}catch(e){try{const s=a.indexOf('{'),e2=a.lastIndexOf('}')+1;a=JSON.parse(a.substring(s,e2));}catch(e2){}}}
+    if(a&&typeof a==='object'&&a.overall){
+      const oc={passed:'var(--green)',partial:'#f39c12',not_passed:'var(--accent)'};
+      const ol={passed:'✅ ผ่าน',partial:'⚠️ ผ่านบางส่วน',not_passed:'❌ ยังไม่ผ่าน'};
+      let h=`<div class="ct-head"><div class="bc">← ${sd.name} / ประเมินทักษะ</div><h2>🎯 ผลการประเมิน</h2>
+        <div class="row"><button class="btn btn-outline" onclick="showOverview()">← กลับ</button></div></div><div class="ct-body">
+        <div class="cl-card" style="border-left:4px solid ${oc[a.overall]||'#999'}"><div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:1.8em">${a.overall==='passed'?'🎉':a.overall==='partial'?'⚠️':'❌'}</span>
+        <div><div style="font-size:1.05em;font-weight:700;color:${oc[a.overall]}">${ol[a.overall]}</div>
+        <div style="font-size:.82em;color:var(--text2);margin-top:2px">${a.overall_reason||''}</div></div></div></div>`;
+      (a.areas||[]).forEach(ar=>{const ac=ar.status==='passed'?'var(--green)':'var(--accent)';
+        h+=`<div class="cl-card" style="border-left:4px solid ${ac}"><h3><span style="color:${ac}">●</span> ${ar.area}
+          <span class="pill" style="margin-left:auto;background:${ar.status==='passed'?'#e8f8f0':'#fde8e8'};color:${ac}">${ar.status==='passed'?'ผ่าน':'ไม่ผ่าน'}</span></h3>
+          <div style="font-size:.8em;color:var(--text3);margin-bottom:10px">${ar.reason||''}</div>`;
+        (ar.checklist||[]).forEach(cl=>{h+=`<div class="cl-item"><div class="cl-check ${cl.status==='passed'?'done':''}">${cl.status==='passed'?'✓':''}</div>
+          <div><div class="cl-text">${cl.item}</div>${cl.note?`<div style="font-size:.72em;color:var(--text3);margin-top:2px">${cl.note}</div>`:''}</div></div>`;});
+        h+='</div>';});
+      if(a.recommendations?.length){h+='<div class="cl-card" style="background:#fffbf0;border-color:#f0c040"><h3>💡 คำแนะนำ</h3>';
+        a.recommendations.forEach(r=>{h+=`<div style="font-size:.82em;color:var(--text2);padding:4px 0">• ${r}</div>`;});h+='</div>';}
+      h+='</div>';document.getElementById('ct').innerHTML=h;
+    }else{document.getElementById('ct').innerHTML=`<div class="ct-body"><div class="cl-card"><pre style="font-size:.8em;white-space:pre-wrap">${d.raw||JSON.stringify(a,null,2)}</pre></div></div>`;}
+  }catch(e){document.getElementById('ct').innerHTML=`<div class="ct-body"><div style="color:var(--accent)">${e.message}</div></div>`;}}
+
+// TTS
+let ttsUtter=null;
+function speak(btn){
+  if(window.speechSynthesis.speaking){window.speechSynthesis.cancel();btn.textContent='🔊';return;}
+  const text=btn.closest('.m').querySelector('.mb').innerText;
+  ttsUtter=new SpeechSynthesisUtterance(text);
+  ttsUtter.lang='th-TH';ttsUtter.rate=1.25;ttsUtter.pitch=1.8;
+  const voices=window.speechSynthesis.getVoices();
+  const thVoice=voices.find(v=>v.lang.startsWith('th'));
+  if(thVoice)ttsUtter.voice=thVoice;
+  btn.textContent='⏹';
+  ttsUtter.onend=()=>{btn.textContent='🔊';};
+  window.speechSynthesis.speak(ttsUtter);
+}
+// Preload voices
+window.speechSynthesis.getVoices();
+
+// CHAT
+function renderMsgs(ms){document.getElementById('msgs').innerHTML=ms.map(m=>`<div class="m ${m.role}"><div class="mb">${m.role==='assistant'?md(m.content):m.content}</div>${m.role==='assistant'?'<button class="tts-btn" onclick="speak(this)" title="อ่านออกเสียง">🔊</button>':''}</div>`).join('');document.getElementById('msgs').scrollTop=99999;}
+function askAI(t){expandChat();document.getElementById('ci').value=t;sendMsg();}
+async function sendMsg(){const inp=document.getElementById('ci'),msg=inp.value.trim();if(!msg||!sid)return;inp.value='';document.getElementById('cs').disabled=true;
+  const el=document.getElementById('msgs');el.innerHTML+=`<div class="m user"><div class="mb">${msg}</div></div>`;
+  const aiId='ai-'+Date.now();el.innerHTML+=`<div class="m assistant"><div class="mb" id="${aiId}"><span style="color:var(--text3)">⏳</span></div><button class="tts-btn" onclick="speak(this)" title="อ่านออกเสียง">🔊</button></div>`;el.scrollTop=99999;
+  try{const res=await fetch(`${API}/api/chat/${sid}/stream`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+    const reader=res.body.getReader();const dec=new TextDecoder();let full='';const bub=document.getElementById(aiId);
+    while(true){const{done,value}=await reader.read();if(done)break;const chunk=dec.decode(value);
+      chunk.split('\n').filter(l=>l.startsWith('data: ')).forEach(line=>{try{const d=JSON.parse(line.slice(6));if(d.text){full+=d.text;bub.innerHTML=md(full);}}catch(e){}});el.scrollTop=99999;}
+    // Course cards
+    if((msg.includes('แนะนำ')||msg.includes('เนื้อหา')||msg.includes('คอร์ส')||full.includes('คอร์ส'))&&courses.length){
+      let ch=`<div class="m assistant"><div class="suggest-card"><h5>📌 คอร์สที่มี — เลือกเพิ่มเข้า SuperPath</h5>`;
+      courses.forEach((c,i)=>{const ip=path.find(p=>p.idx===i&&p.in);
+        ch+=`<div class="suggest-item"><span class="s-name">${c.name}</span><span class="s-meta">${c.instructor||''}</span>
+          <button class="btn-add ${ip?'added':''}" onclick="addC(${i});this.textContent='✓';this.classList.add('added')">${ip?'✓':'+ เพิ่ม'}</button></div>`;});
+      ch+='</div></div>';el.innerHTML+=ch;}
+    // To-Do cards — detect numbered lists from AI response
+    const tl=full.split('\n').map(l=>l.replace(/^\s*\*\*/, '').trim()).filter(l=>l.match(/^\d+[\.\)]/));
+    const isTodo=msg.toLowerCase().includes('to-do')||msg.toLowerCase().includes('todo')||msg.includes('ลงมือทำ')||msg.includes('สร้าง to')||
+      full.toLowerCase().includes('to-do')||full.includes('สิ่งที่ต้องทำ')||full.includes('รายการ')||learningMode==='todo';
+    if(tl.length>=2 && isTodo){
+      let th=`<div class="m assistant"><div class="suggest-card"><h5>📝 เลือกเพิ่ม To-Do เข้า SuperPath</h5>
+        <button class="btn-add" style="margin-bottom:8px;font-size:.75em" onclick="addAllTodos(this)">+ เพิ่มทั้งหมด</button>`;
+      tl.forEach((l,idx)=>{const t=l.replace(/^\d+[\.\)]\s*/,'').replace(/\*\*/g,'').trim();const s=t.substring(0,60);const ex=todos.find(x=>x.title===s);
+        th+=`<div class="suggest-item"><span class="s-name">${t.substring(0,100)}</span>
+          <button class="btn-add ${ex?'added':''}" id="todo-add-${idx}" data-title="${s.replace(/"/g,'&quot;')}" data-desc="${t.replace(/"/g,'&quot;')}" onclick="addT(this.dataset.title,this.dataset.desc);this.textContent='✓';this.classList.add('added')">${ex?'✓':'+ เพิ่ม'}</button></div>`;});
+      th+='</div></div>';el.innerHTML+=th;}
+    el.scrollTop=99999;
+  }catch(e){document.getElementById(aiId).innerHTML='<span style="color:var(--accent)">เกิดข้อผิดพลาด</span>';}
+  document.getElementById('cs').disabled=false;inp.focus();updateProg();}
+function addAllTodos(btn){
+  document.querySelectorAll('[id^="todo-add-"]').forEach(b=>{
+    if(!b.classList.contains('added')){addT(b.dataset.title,b.dataset.desc);b.textContent='✓';b.classList.add('added');}
+  });btn.textContent='✓ เพิ่มทั้งหมดแล้ว';btn.classList.add('added');
+}
+function addC(i){let p=path.find(x=>x.idx===i);if(!p)path.push({type:'course',idx:i,name:courses[i].name,in:true});else p.in=true;buildSB();}
+function addT(title,desc){if(!todos.find(t=>t.title===title)){todos.push({title,desc,ok:false,file:null});buildSB();}}
+async function updateProg(){if(!sid)return;const r=await fetch(`${API}/api/chat/${sid}/progress`);const d=await r.json();const p=Math.round(d.percent_complete);
+  document.getElementById('sb-bar').style.width=p+'%';document.getElementById('sb-pct').textContent=`${p}% (${d.completed_checklist_items}/${d.total_checklist_items})`;}
+function goHome(){document.getElementById('learn').style.display='none';document.getElementById('cat').style.display='block';
+  document.querySelector('.sb').style.display='flex';document.getElementById('ct').style.display='';
+  const cp=document.getElementById('cp');cp.classList.remove('expanded');chatExp=false;
+  sid=null;sd=null;path=[];todos=[];learningMode=null;}
+loadSkills();
+</script>
+</body>
+</html>
