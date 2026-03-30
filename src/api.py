@@ -12,6 +12,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
 from src.app import App
+from src.services.skill_path_admin import ConflictError
 
 _ROOT = os.path.dirname(os.path.dirname(__file__))
 SKILLS_FILE = os.path.join(_ROOT, "seed-data", "skills-name.md")
@@ -444,3 +445,224 @@ if os.path.exists(FRONTEND_DIR):
     @api.get("/")
     def serve_frontend():
         return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+
+
+# ==========================================================================
+# Admin Dashboard API — /api/dashboard/skill-path/
+# ==========================================================================
+
+from src.models.errors import ValidationError as AppValidationError, NotFoundError
+from src.models.skill_path import Enrollment, TokenUsageLog, SafetyViolationLog
+from src.services import ai_suggest
+from fastapi import UploadFile, File, Form
+from typing import Optional
+import json as _json_mod
+
+
+class TemplateCreateRequest(BaseModel):
+    title: str
+    skill_name: str
+    description: str = ""
+    created_by: str = ""
+    cover_image: Optional[str] = None
+    items: list[dict] = []
+    badge_levels: list[dict] = []
+    criteria: list[dict] = []
+
+
+class TemplateUpdateRequest(BaseModel):
+    title: str
+    skill_name: str
+    description: str = ""
+    version: Optional[int] = None
+    cover_image: Optional[str] = None
+    items: list[dict] = []
+    badge_levels: list[dict] = []
+    criteria: list[dict] = []
+    created_by: str = ""
+
+
+class AISuggestRequest(BaseModel):
+    message: str
+    skill_name: str = ""
+    description: str = ""
+    badge_levels: list[dict] = []
+    existing_items: list[dict] = []
+    chat_history: list[dict] = []
+
+
+# --- CRUD ---
+
+@api.post("/api/dashboard/skill-path/", status_code=201)
+def admin_create_template(req: TemplateCreateRequest):
+    svc = app_instance.get_skill_path_admin()
+    try:
+        template = svc.create_template(req.model_dump())
+        return svc.serialize_template(template)
+    except AppValidationError as e:
+        raise HTTPException(status_code=400, detail={"errors": e.fields})
+
+
+@api.get("/api/dashboard/skill-path/")
+def admin_list_templates():
+    svc = app_instance.get_skill_path_admin()
+    return {"results": svc.list_templates()}
+
+
+@api.get("/api/dashboard/skill-path/{template_id}")
+def admin_get_template(template_id: str):
+    svc = app_instance.get_skill_path_admin()
+    try:
+        template = svc.get_template(template_id)
+        return svc.serialize_template(template)
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+
+@api.put("/api/dashboard/skill-path/{template_id}")
+def admin_update_template(template_id: str, req: TemplateUpdateRequest):
+    svc = app_instance.get_skill_path_admin()
+    try:
+        result = svc.update_template(template_id, req.model_dump())
+        resp = svc.serialize_template(result["template"])
+        if "warning" in result:
+            resp["warning"] = result["warning"]
+        return resp
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Template not found")
+    except ConflictError as e:
+        raise HTTPException(status_code=409, detail={"message": str(e), "current_version": e.current_version})
+    except AppValidationError as e:
+        raise HTTPException(status_code=400, detail={"errors": e.fields})
+
+
+@api.delete("/api/dashboard/skill-path/{template_id}", status_code=204)
+def admin_delete_template(template_id: str):
+    svc = app_instance.get_skill_path_admin()
+    try:
+        svc.delete_template(template_id)
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+
+# --- Publish / Archive ---
+
+@api.patch("/api/dashboard/skill-path/{template_id}/publish")
+def admin_publish_template(template_id: str):
+    svc = app_instance.get_skill_path_admin()
+    try:
+        template = svc.publish_template(template_id)
+        return svc.serialize_template(template)
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Template not found")
+    except AppValidationError as e:
+        raise HTTPException(status_code=400, detail={"errors": e.fields})
+
+
+@api.patch("/api/dashboard/skill-path/{template_id}/archive")
+def admin_archive_template(template_id: str):
+    svc = app_instance.get_skill_path_admin()
+    try:
+        template = svc.archive_template(template_id)
+        return svc.serialize_template(template)
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Template not found")
+    except AppValidationError as e:
+        raise HTTPException(status_code=400, detail={"errors": e.fields})
+
+
+# --- Cover Image Upload ---
+
+@api.post("/api/dashboard/skill-path/{template_id}/cover-image")
+async def admin_upload_cover_image(template_id: str, file: UploadFile = File(...)):
+    svc = app_instance.get_skill_path_admin()
+    try:
+        content = await file.read()
+        url = svc.upload_cover_image(template_id, file.filename or "image.png", content)
+        return {"cover_image": url}
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Template not found")
+    except AppValidationError as e:
+        raise HTTPException(status_code=400, detail={"errors": e.fields})
+
+
+@api.post("/api/dashboard/skill-path/{template_id}/badge-image/{badge_order}")
+async def admin_upload_badge_image(template_id: str, badge_order: int, file: UploadFile = File(...)):
+    svc = app_instance.get_skill_path_admin()
+    try:
+        content = await file.read()
+        url = svc.upload_badge_image(template_id, badge_order, file.filename or "badge.png", content)
+        return {"badge_image": url}
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except AppValidationError as e:
+        raise HTTPException(status_code=400, detail={"errors": e.fields})
+
+
+# --- Enrollments ---
+
+@api.get("/api/dashboard/skill-path/{template_id}/enrollments")
+def admin_list_enrollments(template_id: str):
+    svc = app_instance.get_skill_path_admin()
+    try:
+        return {"results": svc.list_enrollments(template_id)}
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+
+@api.get("/api/dashboard/enrollments/{enrollment_id}")
+def admin_get_enrollment_detail(enrollment_id: str):
+    svc = app_instance.get_skill_path_admin()
+    try:
+        return svc.get_enrollment_detail(enrollment_id)
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Enrollment not found.")
+
+
+# --- AI Suggest ---
+
+@api.post("/api/dashboard/skill-path/ai-suggest")
+def admin_ai_suggest(req: AISuggestRequest, stream: int = 0):
+    if not req.message or not req.message.strip():
+        raise HTTPException(status_code=400, detail="message is required")
+    try:
+        if stream == 1:
+            gen = ai_suggest.suggest_content(
+                message=req.message,
+                skill_name=req.skill_name,
+                description=req.description,
+                badge_levels=req.badge_levels,
+                existing_items=req.existing_items,
+                chat_history=req.chat_history,
+                stream=True,
+            )
+            return StreamingResponse(gen, media_type="text/event-stream")
+        else:
+            result = ai_suggest.suggest_content(
+                message=req.message,
+                skill_name=req.skill_name,
+                description=req.description,
+                badge_levels=req.badge_levels,
+                existing_items=req.existing_items,
+                chat_history=req.chat_history,
+                stream=False,
+            )
+            return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# --- AI Monitoring ---
+
+@api.get("/api/dashboard/ai-monitoring")
+def admin_ai_monitoring():
+    svc = app_instance.get_skill_path_admin()
+    return svc.get_ai_monitoring()
+
+
+# --- Safety Violations ---
+
+@api.get("/api/dashboard/safety-violations")
+def admin_safety_violations():
+    svc = app_instance.get_skill_path_admin()
+    return {"results": svc.get_safety_violations()}

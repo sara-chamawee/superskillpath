@@ -1,0 +1,36 @@
+.sb { width: 280px; min-width: 280px; background: var(--primary); overflow-y: auto; display: flex; flex-direction: column; flex-shrink: 0; min-height: 0; }
+.sb-top { padding: 20px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.sb-top .label { font-size: .65em; color: rgba(255,255,255,.4); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+.sb-top h2 { font-size: .95em; color: white; margin: 6px 0 12px; font-weight: 600; }
+.sb-bar { background: rgba(255,255,255,.12); border-radius: 4px; height: 5px; margin-bottom: 4px; }
+.sb-bar-fill { background: var(--green); height: 100%; border-radius: 4px; transition: width .4s; }
+.sb-pct { font-size: .7em; color: var(--green); font-weight: 600; }
+.sb-btn { width: 100%; padding: 10px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.1); border-radius: 8px; cursor: pointer; font-size: .8em; color: rgba(255,255,255,.8); font-weight: 500; margin-top: 12px; font-family: inherit; text-align: left; }
+.sb-btn:hover { background: rgba(255,255,255,.14); }
+.sb-back { background: none; border: none; cursor: pointer; font-size: .75em; color: rgba(255,255,255,.45); margin-top: 8px; font-family: inherit; text-align: left; padding: 0; }
+.sb-sec { font-size: .6em; color: rgba(255,255,255,.3); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 16px 20px 6px; }
+.si { padding: 10px 20px; cursor: pointer; display: flex; gap: 10px; align-items: flex-start; border-left: 3px solid transparent; transition: all .15s; }
+.si:hover { background: rgba(255,255,255,.04); }
+.si.active { background: rgba(255,255,255,.08); border-left-color: var(--green); }
+.si .dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+.si .dot.c { background: #5dade2; }
+.si .dot.t { background: #f5b041; }
+.si .inf { flex: 1; }
+.si .tp { font-size: .6em; color: rgba(255,255,255,.35); font-weight: 500; }
+.si .nm { font-size: .78em; color: rgba(255,255,255,.85); line-height: 1.4; }
+.si .du { font-size: .65em; color: rgba(255,255,255,.3); margin-top: 2px; }
+
+.sb-btn-review { background: linear-gradient(135deg, #2ecc71, #1abc9c); color: white; border: none; font-weight: 700; }
+.sb-btn-review:hover { background: linear-gradient(135deg, #27ae60, #16a085); }
+.sb-btn-badge { background: linear-gradient(135deg, #f1c40f, #f39c12); color: #333; border: none; font-weight: 700; }
+.sb-btn-badge:hover { background: linear-gradient(135deg, #e6b800, #e67e22); }
+
+/* ── Level-based sidebar (from admin quest data) ── */
+.sb-level-header { display: flex; align-items: center; gap: 10px; padding: 10px 16px; cursor: pointer; border-left: 3px solid transparent; transition: all .15s; }
+.sb-level-header:hover { background: rgba(255,255,255,.06); }
+.sb-level-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: .85em; flex-shrink: 0; }
+.sb-level-info { flex: 1; min-width: 0; }
+.sb-level-name { font-size: .82em; font-weight: 600; color: white; }
+.sb-level-meta { font-size: .65em; color: rgba(255,255,255,.4); }
+.sb-level-chevron { font-size: .65em; color: rgba(255,255,255,.3); }
+.sb-level-content { padding-bottom: 4px; }

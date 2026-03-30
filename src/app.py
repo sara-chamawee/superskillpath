@@ -9,6 +9,7 @@ from src.services.ai_chat_engine import AIChatEngineService, ChatResponse
 from src.services.progress_tracker import ProgressTrackerService
 from src.services.skill_catalog import SkillCatalogService
 from src.services.skill_manager import SkillManagerService
+from src.services.skill_path_admin import SkillPathAdminService
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,7 @@ class App:
         self._chat_engine = AIChatEngineService(
             self._skill_catalog, self._progress_tracker
         )
+        self._skill_path_admin = SkillPathAdminService()
 
         # Load seed data if file paths provided
         if skills_file is not None:
@@ -59,6 +61,9 @@ class App:
 
     def get_chat_engine(self) -> AIChatEngineService:
         return self._chat_engine
+
+    def get_skill_path_admin(self) -> SkillPathAdminService:
+        return self._skill_path_admin
 
     # ------------------------------------------------------------------
     # Convenience methods

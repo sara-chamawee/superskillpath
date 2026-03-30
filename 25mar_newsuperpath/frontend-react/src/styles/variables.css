@@ -1,0 +1,25 @@
+:root {
+  --primary: #1a3a5c;
+  --accent: #e74c3c;
+  --accent-light: #fff0f0;
+  --green: #27ae60;
+  --purple: #6c5ce7;
+  --bg: #f8f9fb;
+  --card: white;
+  --text: #2c3e50;
+  --text2: #5a6c7d;
+  --text3: #95a5b6;
+  --border: #e8ecf1;
+  --radius: 12px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'IBM Plex Sans Thai', 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.6;
+}

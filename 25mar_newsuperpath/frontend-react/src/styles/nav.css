@@ -1,0 +1,10 @@
+.nav { background: white; height: 52px; display: flex; align-items: center; padding: 0 24px; border-bottom: 1px solid var(--border); justify-content: space-between; }
+.nav .logo { font-size: 1.15em; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+.nav .logo span { color: var(--accent); }
+.nav-right { display: flex; align-items: center; gap: 16px; }
+.nav-btn { padding: 6px 16px; border-radius: 8px; font-size: .8em; border: 1px solid var(--border); background: white; cursor: pointer; color: var(--text2); font-weight: 500; font-family: inherit; }
+.nav-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--purple); color: white; display: flex; align-items: center; justify-content: center; font-size: .75em; font-weight: 600; }
+
+.nav-btn-admin { background: linear-gradient(135deg, #e8536d, #f472b6); color: white; border-color: #e8536d; font-weight: 600; }
+.nav-btn-admin:hover { background: linear-gradient(135deg, #d6455f, #ec4899); }
