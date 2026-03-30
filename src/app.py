@@ -46,6 +46,9 @@ class App:
         if skill_courses_file is not None:
             self._load_skill_courses(skill_courses_file)
 
+        # Auto-seed admin templates from skills with complete data
+        self._seed_admin_templates()
+
     # ------------------------------------------------------------------
     # Service accessors
     # ------------------------------------------------------------------
@@ -148,3 +151,79 @@ class App:
             self._skill_catalog.add_courses(skill_courses, {})
             total = sum(len(c) for c in skill_courses.values())
             logger.info("Imported %d courses for %d skills from skill-courses.md", total, len(skill_courses))
+
+    def _seed_admin_templates(self) -> None:
+        """Auto-create admin templates from skills that have complete data (areas + checklist)."""
+        if self._skill_path_admin.list_templates():
+            return  # Already have templates
+
+        skills = self._skill_catalog.list_skills()
+        count = 0
+        for skill in skills:
+            if not skill.assessment_criteria:
+                continue
+            # Only seed skills with at least 1 area that has checklist items
+            areas_with_data = [
+                c for c in skill.assessment_criteria
+                if c.name and c.checklist_items
+            ]
+            if not areas_with_data:
+                continue
+
+            # Build areas for badge level
+            areas = [
+                {
+                    "name": c.name,
+                    "checklist_items": [item.description for item in c.checklist_items],
+                }
+                for c in areas_with_data
+            ]
+
+            # Build course items
+            courses = self._skill_catalog.get_courses_for_skill(skill.name)
+            items = [
+                {
+                    "title": c.name,
+                    "item_type": "fixed",
+                    "content_type": "material",
+                    "learning_type": "formal",
+                    "order": i + 1,
+                    "estimated_minutes": 60,
+                    "badge_level_order": 1,
+                    "required": True,
+                    "ai_generated": False,
+                }
+                for i, c in enumerate(courses)
+            ]
+
+            try:
+                template = self._skill_path_admin.create_template({
+                    "title": skill.name,
+                    "skill_name": skill.name,
+                    "description": skill.definition or "",
+                    "created_by": "system",
+                    "items": items,
+                    "badge_levels": [
+                        {
+                            "name": "Explorer",
+                            "order": 1,
+                            "description": f"ระดับเริ่มต้นสำหรับ {skill.name}",
+                            "areas": areas,
+                        }
+                    ],
+                    "criteria": [
+                        {"criteria_type": "completion_rate", "value": 80, "badge_level_order": 1},
+                    ],
+                })
+                # Auto-publish templates with complete data (must have items)
+                if template.items:
+                    try:
+                        self._skill_path_admin.publish_template(str(template.id))
+                    except Exception:
+                        pass  # Stay as draft if publish fails
+                count += 1
+            except Exception as e:
+                logger.warning("Failed to seed template for %s: %s", skill.name, e)
+
+        if count:
+            logger.info("Auto-seeded %d admin templates from skills with complete data", count)

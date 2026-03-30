@@ -349,7 +349,7 @@ export default function App() {
     if (qs) { setContentView('quiz'); setContentData({ quizSet: qs, idx: quizzes.indexOf(qs) }); }
   };
 
-  const doSkillBadge = () => {
+  const doSkillBadge = async () => {
     const passedSim = simulations.filter(s => s.result === 'passed').length;
     const passedTodo = todos.filter(t => t.ok).length;
     const totalQuizQ = quizzes.reduce((sum, qs) => sum + qs.questions.length, 0);
@@ -357,15 +357,75 @@ export default function App() {
     const totalDone = passedSim + passedTodo + passedQuiz;
     const totalItems = simulations.length + todos.length + totalQuizQ;
     const pct = totalItems > 0 ? Math.round((totalDone / totalItems) * 100) : 0;
+    const quizPct = totalQuizQ > 0 ? Math.round((passedQuiz / totalQuizQ) * 100) : 0;
 
-    if (pct >= 70) {
-      setBadgeEarned(true);
-      setContentView('badge');
-      setContentData({ skillName: skill?.name, pct, passedSim, passedTodo, passedQuiz, totalItems, totalDone });
-    } else {
-      setContentView('badge');
-      setContentData({ skillName: skill?.name, pct, passedSim, passedTodo, passedQuiz, totalItems, totalDone, notYet: true });
+    // Load admin quest data
+    let questData = null;
+    try {
+      const r = await fetch(`/api/dashboard/skill-path/`);
+      const d = await r.json();
+      const match = (d.results || []).find(t => t.skill_name === skill?.name || t.title === skill?.name);
+      if (match) {
+        const r2 = await fetch(`/api/dashboard/skill-path/${match.id}`);
+        questData = await r2.json();
+      }
+    } catch {}
+
+    // Evaluate badge per level using admin criteria
+    const levelResults = [];
+    const levels = questData?.badge_levels?.sort((a, b) => a.order - b.order) || [];
+    let allLevelsEarned = levels.length > 0;
+
+    for (const bl of levels) {
+      const criteria = bl.criteria || [];
+      const levelMissions = (questData?.items || []).filter(it => it.badge_level_order === bl.order);
+      const totalLevelMissions = levelMissions.length;
+      const requiredMissions = levelMissions.filter(it => it.required !== false);
+
+      const criteriaResults = criteria.map(c => {
+        let actual = 0, passed = false;
+        if (c.criteria_type === 'completion_rate') {
+          actual = totalItems > 0 ? Math.round((totalDone / totalItems) * 100) : 0;
+          passed = actual >= c.value;
+        } else if (c.criteria_type === 'quiz_score') {
+          actual = quizPct;
+          passed = actual >= c.value;
+        } else if (c.criteria_type === 'min_hours') {
+          // Estimate from completed items (each ~30min)
+          actual = Math.round((totalDone * 0.5) * 10) / 10;
+          passed = actual >= c.value;
+        } else if (c.criteria_type === 'project') {
+          actual = passedSim + passedTodo;
+          passed = actual >= c.value;
+        } else if (c.criteria_type === 'todo_list') {
+          actual = passedTodo;
+          passed = actual >= c.value;
+        } else {
+          // Default: check if missions done
+          actual = totalDone;
+          passed = actual >= c.value;
+        }
+        return { ...c, actual, passed };
+      });
+
+      // Level earned if ALL criteria pass (or no criteria = all missions done)
+      const levelEarned = criteria.length > 0
+        ? criteriaResults.every(cr => cr.passed)
+        : (totalLevelMissions > 0 && totalDone >= requiredMissions.length);
+
+      if (!levelEarned) allLevelsEarned = false;
+      levelResults.push({ ...bl, criteriaResults, levelEarned, totalLevelMissions });
     }
+
+    // Fallback: no admin data → use 70% rule
+    const earned = levels.length > 0 ? allLevelsEarned : pct >= 70;
+
+    if (earned) setBadgeEarned(true);
+    setContentView('badge');
+    setContentData({
+      skillName: skill?.name, pct, passedSim, passedTodo, passedQuiz, totalItems, totalDone, quizPct,
+      questData, levelResults, earned, notYet: !earned,
+    });
   };
 
   if (view === 'admin') return (
@@ -378,7 +438,7 @@ export default function App() {
   if (view === 'catalog') return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Nav onHome={goHome} currentView="catalog" onAdmin={goAdmin} />
-      <div style={{ flex: 1, display: 'flex' }}><SkillCatalog onSelectSkill={openSkill} selectedSkills={selectedSkills} onToggleSelect={toggleSelectSkill} /></div>
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}><SkillCatalog onSelectSkill={openSkill} selectedSkills={selectedSkills} onToggleSelect={toggleSelectSkill} /></div>
     </div>
   );
 

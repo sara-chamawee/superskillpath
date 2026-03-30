@@ -227,10 +227,15 @@ function SimulationView({ sim, skill, onSubmit, onChange, onAskCoach, onConfirm 
           <div style={{ fontSize: '.85em', color: 'var(--text2)', lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: renderMarkdown(sim.scenario) }} />
         </div>
 
-        {/* Answer box — only after confirmed */}
-        {sim.confirmed && (!sim.done || sim.result !== 'passed') && (
+        {/* Answer box — show when not yet passed */}
+        {(!sim.done || sim.result !== 'passed') && (
           <div className="cl-card">
             <h3>💬 {sim.attempts?.length ? 'ลองตอบใหม่' : 'ตอบคำถาม'}</h3>
+            {!sim.confirmed && (
+              <div style={{ background: '#fffde7', borderRadius: 8, padding: '8px 12px', fontSize: '.78em', color: '#92400e', marginBottom: 12 }}>
+                💡 อ่านสถานการณ์ด้านบนแล้วพิมพ์คำตอบได้เลย หรือกด "ยืนยันสถานการณ์นี้" ก่อนก็ได้
+              </div>
+            )}
             <textarea value={answer} onChange={e => setAnswer(e.target.value)}
               style={{ width: '100%', minHeight: 120, border: '1.5px solid var(--border)', borderRadius: 8, padding: 12, fontFamily: 'inherit', fontSize: '.85em', resize: 'vertical' }}
               placeholder="พิมพ์คำตอบของคุณ..." />
@@ -501,7 +506,19 @@ function QuizSetView({ quizSet, idx, skill, onSubmit }) {
 
 function BadgeView({ data, skill, onBack }) {
   if (!data) return null;
-  const earned = !data.notYet;
+  const earned = data.earned || !data.notYet;
+  const quest = data.questData;
+  const levelResults = data.levelResults || [];
+  const LEVEL_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ec4899', '#8b5cf6'];
+  const LEVEL_ICONS = ['🔍', '🛡️', '⚔️', '👑', '🌟'];
+  const CRITERIA_LABELS = {
+    min_hours: 'ชั่วโมงเรียน', class_attendance: 'เข้าเรียน', quiz_score: 'คะแนน Quiz',
+    completion_rate: 'อัตราสำเร็จ', project: 'โปรเจกต์/Simulation', coaching: 'Coaching',
+    todo_list: 'To-Do List', skill_acquired: 'ทักษะที่ได้', competency: 'สมรรถนะ', offline_learning: 'เรียนรู้นอกระบบ',
+  };
+  const CRITERIA_UNITS = {
+    min_hours: 'ชม.', quiz_score: '%', completion_rate: '%',
+  };
 
   return (
     <div className="ct">
@@ -511,18 +528,102 @@ function BadgeView({ data, skill, onBack }) {
         <div className="row"><button className="btn btn-outline" onClick={onBack}>← กลับ</button></div>
       </div>
       <div className="ct-body">
-        <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-          <div style={{ fontSize: earned ? '5em' : '3em', marginBottom: 16 }}>{earned ? '🏆' : '🔒'}</div>
+        {/* Overall status */}
+        <div style={{ textAlign: 'center', padding: '28px 20px' }}>
+          <div style={{ fontSize: earned ? '5em' : '3em', marginBottom: 12 }}>{earned ? '🏆' : '🔒'}</div>
           <h2 style={{ color: earned ? 'var(--green)' : 'var(--text3)', marginBottom: 8 }}>
             {earned ? `ยินดีด้วย! คุณได้รับ Badge "${data.skillName}"` : 'ยังไม่ได้รับ Badge'}
           </h2>
-          <div style={{ fontSize: '.9em', color: 'var(--text2)', marginBottom: 24 }}>
-            {earned
-              ? `คุณทำสำเร็จ ${data.totalDone}/${data.totalItems} รายการ (${data.pct}%) — ผ่านเกณฑ์ 70% แล้ว!`
-              : `ทำสำเร็จ ${data.totalDone}/${data.totalItems} รายการ (${data.pct}%) — ต้องผ่านอย่างน้อย 70%`}
+          <div style={{ fontSize: '.88em', color: 'var(--text2)', marginBottom: 8 }}>
+            ทำสำเร็จ {data.totalDone}/{data.totalItems} รายการ ({data.pct}%)
+          </div>
+          <div style={{ maxWidth: 400, margin: '0 auto', background: '#f0f0f5', borderRadius: 8, height: 14, overflow: 'hidden' }}>
+            <div style={{ height: '100%', borderRadius: 8, background: earned ? 'linear-gradient(90deg, #10b981, #059669)' : 'linear-gradient(90deg, #f59e0b, #f97316)', width: `${data.pct}%`, transition: 'width .5s' }} />
           </div>
         </div>
 
+        {/* Per-level badge with evaluated criteria */}
+        {levelResults.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <h3 style={{ fontSize: '.95em', marginBottom: 12 }}>🏅 Badge ตาม Level</h3>
+            {levelResults.map((lr, i) => (
+              <div key={i} className="cl-card" style={{ borderLeft: `4px solid ${LEVEL_COLORS[i]}`, marginBottom: 14 }}>
+                {/* Level header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: lr.levelEarned ? `${LEVEL_COLORS[i]}` : `${LEVEL_COLORS[i]}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5em', color: lr.levelEarned ? 'white' : LEVEL_COLORS[i] }}>
+                    {lr.levelEarned ? '🏅' : LEVEL_ICONS[i]}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: '.95em' }}>Level {lr.order}: {lr.name}</div>
+                    <div style={{ fontSize: '.75em', color: 'var(--text3)' }}>
+                      {lr.totalLevelMissions} missions {lr.description ? `· ${lr.description}` : ''}
+                    </div>
+                  </div>
+                  <span style={{ padding: '4px 14px', borderRadius: 20, fontSize: '.78em', fontWeight: 700,
+                    background: lr.levelEarned ? '#d1fae5' : '#fef3c7', color: lr.levelEarned ? '#065f46' : '#92400e' }}>
+                    {lr.levelEarned ? '✅ Badge Earned!' : '🔒 Not Yet'}
+                  </span>
+                </div>
+
+                {/* Criteria checklist — show each condition with pass/fail */}
+                {lr.criteriaResults?.length > 0 && (
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: '.78em', fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>🎯 เงื่อนไขการได้รับ Badge:</div>
+                    {lr.criteriaResults.map((cr, ci) => {
+                      const unit = CRITERIA_UNITS[cr.criteria_type] || '';
+                      const label = CRITERIA_LABELS[cr.criteria_type] || cr.criteria_type;
+                      return (
+                        <div key={ci} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid #f0f0f5' }}>
+                          <span style={{ fontSize: '1.1em' }}>{cr.passed ? '✅' : '❌'}</span>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '.85em', fontWeight: 500 }}>{label}</div>
+                            <div style={{ fontSize: '.72em', color: 'var(--text3)' }}>เป้าหมาย: ≥ {cr.value}{unit}</div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '.95em', fontWeight: 700, color: cr.passed ? 'var(--green)' : 'var(--accent)' }}>
+                              {cr.actual}{unit}
+                            </div>
+                            <div style={{ fontSize: '.68em', color: cr.passed ? 'var(--green)' : 'var(--accent)' }}>
+                              {cr.passed ? 'ผ่าน' : `ขาดอีก ${Math.max(0, cr.value - cr.actual)}${unit}`}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* No criteria defined — mission-based */}
+                {(!lr.criteriaResults || lr.criteriaResults.length === 0) && (
+                  <div style={{ fontSize: '.82em', color: 'var(--text2)', padding: '6px 0' }}>
+                    🎯 เงื่อนไข: ทำ Mission ทั้งหมดใน Level นี้ให้สำเร็จ ({lr.totalLevelMissions} missions)
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Achievement badges from admin */}
+        {quest?.achievement_badges?.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <h3 style={{ fontSize: '.95em', marginBottom: 12 }}>🏆 Achievement Badges</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
+              {quest.achievement_badges.map((ab, i) => (
+                <div key={i} className="cl-card" style={{ textAlign: 'center', padding: 16 }}>
+                  <div style={{ fontSize: '2em', marginBottom: 4 }}>{ab.icon || '🏆'}</div>
+                  <div style={{ fontWeight: 700, fontSize: '.82em' }}>{ab.name}</div>
+                  <div style={{ fontSize: '.72em', color: 'var(--text3)', marginTop: 2 }}>
+                    {(ab.desc || '').replace(`{${ab.variable}}`, ab.customVal || ab.defaultVal || '')}
+                  </div>
+                  <div style={{ marginTop: 6, fontSize: '.72em', color: '#95a5b6' }}>🔒 ยังไม่ได้รับ</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Summary stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
           <div className="cl-card" style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '2em', marginBottom: 4 }}>🎯</div>
@@ -545,7 +646,13 @@ function BadgeView({ data, skill, onBack }) {
           <div className="cl-card" style={{ borderLeft: '4px solid #f39c12', background: '#fffde7' }}>
             <h3>💡 ทำอะไรต่อดี?</h3>
             <div style={{ fontSize: '.85em', color: 'var(--text2)', lineHeight: 1.7 }}>
-              ลองทำ Simulation, To-Do หรือ Quiz ที่ยังไม่ผ่านให้ครบ เพื่อรับ Skill Badge ครับ!
+              {levelResults.length > 0
+                ? levelResults.filter(lr => !lr.levelEarned).map(lr => {
+                    const failed = (lr.criteriaResults || []).filter(cr => !cr.passed);
+                    if (failed.length === 0) return `Level ${lr.order} (${lr.name}): ทำ Mission ให้ครบ`;
+                    return `Level ${lr.order} (${lr.name}): ${failed.map(f => `${CRITERIA_LABELS[f.criteria_type] || f.criteria_type} ขาดอีก ${Math.max(0, f.value - f.actual)}${CRITERIA_UNITS[f.criteria_type] || ''}`).join(', ')}`;
+                  }).join(' | ')
+                : 'ลองทำ Simulation, To-Do หรือ Quiz ที่ยังไม่ผ่านให้ครบ เพื่อรับ Skill Badge!'}
             </div>
           </div>
         )}

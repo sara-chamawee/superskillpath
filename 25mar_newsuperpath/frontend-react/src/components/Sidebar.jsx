@@ -63,45 +63,112 @@ export default function Sidebar({ skillName, progress, path, courses, todos, sim
 
                 {isActive && (
                   <div className="sb-level-content">
-                    {levelCourses.length > 0 && (
-                      <>
-                        <div className="sb-sec" style={{ color: '#5dade2' }}>📚 Courses ({levelCourses.length})</div>
-                        {levelCourses.map((item, ci) => {
-                          const courseIdx = courses.findIndex(c => c.name === item.title);
-                          return (
-                            <div key={ci} className="si" onClick={() => { onCollapseChat(); if (courseIdx >= 0) onViewCourse(courseIdx); }}>
-                              <div className="dot c" /><div className="inf"><div className="tp">Course{item.required === false ? ' · Optional' : ''}</div><div className="nm">{item.title}</div></div>
+                    {/* Courses: from admin template + from learner path */}
+                    {(() => {
+                      const templateCourses = levelCourses;
+                      // Also include learner-added courses that match this level
+                      const shownTitles = new Set(templateCourses.map(it => it.title));
+                      const extraCourses = inP.filter(p => {
+                        const c = courses[p.idx];
+                        return c && !shownTitles.has(c.name);
+                      });
+                      const totalCourses = templateCourses.length + (i === 0 ? extraCourses.length : 0);
+                      if (totalCourses === 0) return null;
+                      return (
+                        <>
+                          <div className="sb-sec" style={{ color: '#5dade2' }}>📚 Courses ({totalCourses})</div>
+                          {templateCourses.map((item, ci) => {
+                            const courseIdx = courses.findIndex(c => c.name === item.title);
+                            return (
+                              <div key={`t-${ci}`} className="si" onClick={() => { onCollapseChat(); if (courseIdx >= 0) onViewCourse(courseIdx); }}>
+                                <div className="dot c" /><div className="inf"><div className="tp">Course{item.required === false ? ' · Optional' : ''}</div><div className="nm">{item.title}</div></div>
+                              </div>
+                            );
+                          })}
+                          {i === 0 && extraCourses.map(p => {
+                            const c = courses[p.idx];
+                            return c ? (
+                              <div key={`e-${p.idx}`} className="si" onClick={() => { onCollapseChat(); onViewCourse(p.idx); }}>
+                                <div className="dot c" /><div className="inf"><div className="tp">Course</div><div className="nm">{c.name}</div><div className="du">{c.duration}</div></div>
+                              </div>
+                            ) : null;
+                          })}
+                        </>
+                      );
+                    })()}
+
+                    {/* Simulations: from actual learner state (runtime) */}
+                    {(() => {
+                      // Show all simulations from learner state in the first active level, or match by criteriaName to areas
+                      const areaNames = (bl.areas || []).map(a => a.name?.trim()).filter(Boolean);
+                      const matchedSims = simulations.filter((s, si) => {
+                        // Match by criteriaName to this level's areas
+                        if (areaNames.length > 0 && s.criteriaName) {
+                          return areaNames.some(an => s.criteriaName.includes(an) || an.includes(s.criteriaName));
+                        }
+                        // Fallback: show all sims in first level
+                        return i === 0;
+                      });
+                      // Also show admin-defined sim items that don't have a runtime match
+                      const adminSims = levelSims.filter(item => !matchedSims.some(s => s.title?.includes(item.title)));
+
+                      if (matchedSims.length === 0 && adminSims.length === 0) return null;
+                      return (
+                        <>
+                          <div className="sb-sec" style={{ color: '#e74c3c' }}>🎯 Simulation ({matchedSims.length + adminSims.length})</div>
+                          {matchedSims.map((s, si) => {
+                            const realIdx = simulations.indexOf(s);
+                            return (
+                              <div key={`s-${si}`} className="si" onClick={() => { onCollapseChat(); onViewSim(realIdx); }}>
+                                <div className="dot" style={{ background: s.result === 'passed' ? '#27ae60' : '#e74c3c' }} />
+                                <div className="inf"><div className="tp">Simulation · {s.criteriaName}</div><div className="nm">{s.title}</div>
+                                  <div className="du">{s.done ? (s.result === 'passed' ? '✅ ผ่าน' : '❌ ไม่ผ่าน') : '⏳ รอตอบ'}</div></div>
+                              </div>
+                            );
+                          })}
+                          {adminSims.map((item, si) => (
+                            <div key={`a-${si}`} className="si" style={{ opacity: 0.6 }}>
+                              <div className="dot" style={{ background: '#e74c3c' }} />
+                              <div className="inf"><div className="tp">Simulation</div><div className="nm">{item.title}</div><div className="du">📋 จาก Quest</div></div>
                             </div>
-                          );
-                        })}
-                      </>
-                    )}
-                    {levelSims.length > 0 && (
-                      <>
-                        <div className="sb-sec" style={{ color: '#e74c3c' }}>🎯 Simulation ({levelSims.length})</div>
-                        {levelSims.map((item, si) => {
-                          const simIdx = simulations.findIndex(s => s.title?.includes(item.title) || s.criteriaName === item.title);
-                          return (
-                            <div key={si} className="si" onClick={() => { onCollapseChat(); if (simIdx >= 0) onViewSim(simIdx); }}>
-                              <div className="dot" style={{ background: '#e74c3c' }} /><div className="inf"><div className="tp">Simulation</div><div className="nm">{item.title}</div></div>
+                          ))}
+                        </>
+                      );
+                    })()}
+
+                    {/* Todos: from actual learner state */}
+                    {(() => {
+                      const areaNames = (bl.areas || []).map(a => a.name?.trim()).filter(Boolean);
+                      const matchedTodos = todos.filter((t, ti) => {
+                        if (areaNames.length > 0) {
+                          return areaNames.some(an => t.title?.includes(an) || an.includes(t.title));
+                        }
+                        return i === 0;
+                      });
+                      const adminTodos = levelTodos.filter(item => !matchedTodos.some(t => t.title === item.title));
+
+                      if (matchedTodos.length === 0 && adminTodos.length === 0) return null;
+                      return (
+                        <>
+                          <div className="sb-sec" style={{ color: '#f5b041' }}>✅ To-Do ({matchedTodos.length + adminTodos.length})</div>
+                          {matchedTodos.map((t, ti) => {
+                            const realIdx = todos.indexOf(t);
+                            return (
+                              <div key={`t-${ti}`} className="si" onClick={() => { onCollapseChat(); onViewTodo(realIdx); }}>
+                                <div className="dot t" /><div className="inf"><div className="tp">To-Do</div><div className="nm">{t.title}</div>
+                                  <div className="du">{t.ok ? '✅ Verified' : '⏳ รอส่งงาน'}</div></div>
+                              </div>
+                            );
+                          })}
+                          {adminTodos.map((item, ti) => (
+                            <div key={`at-${ti}`} className="si" style={{ opacity: 0.6 }}>
+                              <div className="dot t" /><div className="inf"><div className="tp">To-Do</div><div className="nm">{item.title}</div><div className="du">📋 จาก Quest</div></div>
                             </div>
-                          );
-                        })}
-                      </>
-                    )}
-                    {levelTodos.length > 0 && (
-                      <>
-                        <div className="sb-sec" style={{ color: '#f5b041' }}>✅ To-Do ({levelTodos.length})</div>
-                        {levelTodos.map((item, ti) => {
-                          const todoIdx = todos.findIndex(t => t.title === item.title);
-                          return (
-                            <div key={ti} className="si" onClick={() => { onCollapseChat(); if (todoIdx >= 0) onViewTodo(todoIdx); }}>
-                              <div className="dot t" /><div className="inf"><div className="tp">To-Do</div><div className="nm">{item.title}</div></div>
-                            </div>
-                          );
-                        })}
-                      </>
-                    )}
+                          ))}
+                        </>
+                      );
+                    })()}
+
                     {levelQuizzes.length > 0 && (
                       <>
                         <div className="sb-sec" style={{ color: '#2ecc71' }}>📝 Quiz ({levelQuizzes.length})</div>
@@ -110,7 +177,7 @@ export default function Sidebar({ skillName, progress, path, courses, todos, sim
                         ))}
                       </>
                     )}
-                    {levelItems.length === 0 && <div style={{ padding: '8px 20px', fontSize: '.7em', color: 'rgba(255,255,255,.25)' }}>ยังไม่มี mission</div>}
+                    {levelItems.length === 0 && simulations.length === 0 && todos.length === 0 && <div style={{ padding: '8px 20px', fontSize: '.7em', color: 'rgba(255,255,255,.25)' }}>ยังไม่มี mission</div>}
                   </div>
                 )}
               </div>

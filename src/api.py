@@ -666,3 +666,14 @@ def admin_ai_monitoring():
 def admin_safety_violations():
     svc = app_instance.get_skill_path_admin()
     return {"results": svc.get_safety_violations()}
+
+
+# --- Learner: Published Skill Paths ---
+
+@api.get("/api/skill-paths")
+def learner_list_skill_paths():
+    """Return only published skill path templates for learners."""
+    svc = app_instance.get_skill_path_admin()
+    all_templates = svc.list_templates()
+    published = [t for t in all_templates if t.get("status") == "published"]
+    return {"results": published}

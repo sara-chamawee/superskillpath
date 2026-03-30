@@ -1,21 +1,25 @@
 :root {
-  --primary: #1a3a5c;
-  --accent: #e74c3c;
-  --accent-light: #fff0f0;
+  --primary: #e8536d;
+  --primary-dark: #d6455f;
+  --primary-light: #fff0f3;
+  --accent: #e8536d;
+  --accent-light: #fff0f3;
   --green: #27ae60;
   --purple: #6c5ce7;
-  --bg: #f8f9fb;
+  --bg: #f9fafb;
   --card: white;
   --text: #2c3e50;
   --text2: #5a6c7d;
   --text3: #95a5b6;
-  --border: #e8ecf1;
-  --radius: 12px;
+  --border: #eef0f4;
+  --radius: 14px;
+  --sidebar-bg: #ffffff;
+  --sidebar-text: #2c3e50;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-  font-family: 'IBM Plex Sans Thai', 'Segoe UI', sans-serif;
+  font-family: 'IBM Plex Sans Thai', 'Inter', 'Segoe UI', sans-serif;
   background: var(--bg);
   color: var(--text);
   height: 100vh;
