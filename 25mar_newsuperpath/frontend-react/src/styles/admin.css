@@ -263,3 +263,11 @@
 .qa-course-picker-item:hover { background: #eff6ff; }
 .qa-course-picker-name { font-weight: 600; font-size: .85em; }
 .qa-course-picker-meta { font-size: .72em; color: #95a5b6; }
+
+/* ── Filter Bar ── */
+.qa-filter-bar { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.qa-filter-tab { padding: 7px 16px; border-radius: 10px; border: 1px solid #e8ecf1; background: white; cursor: pointer; font-size: .82em; font-family: inherit; color: #5a6c7d; font-weight: 500; transition: all .15s; display: flex; align-items: center; gap: 6px; }
+.qa-filter-tab:hover { background: #f8f9fb; border-color: #8b5cf6; color: #8b5cf6; }
+.qa-filter-tab.active { background: linear-gradient(135deg, #e8536d, #8b5cf6); color: white; border-color: transparent; }
+.qa-filter-count { background: rgba(255,255,255,.2); padding: 1px 8px; border-radius: 10px; font-size: .85em; font-weight: 600; }
+.qa-filter-tab:not(.active) .qa-filter-count { background: #f0f0f5; color: #5a6c7d; }

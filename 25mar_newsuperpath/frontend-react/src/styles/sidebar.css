@@ -9,7 +9,7 @@
 .sb-btn { display: block; width: 100%; padding: 8px 12px; margin-bottom: 6px; border-radius: 10px; border: 1px solid var(--border); background: white; cursor: pointer; font-size: .78em; font-family: inherit; color: var(--text2); text-align: left; transition: all .15s; }
 .sb-btn:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
 .sb-btn-review { }
-.sb-btn-badge { color: var(--primary); border-color: var(--primary); background: var(--primary-light); }
+.sb-btn-badge { }
 .sb-back { display: block; width: 100%; padding: 6px 12px; margin-top: 4px; border-radius: 8px; border: none; background: none; cursor: pointer; font-size: .72em; font-family: inherit; color: var(--text3); text-align: left; }
 .sb-back:hover { color: var(--primary); }
 

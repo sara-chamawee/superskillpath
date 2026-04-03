@@ -19,6 +19,7 @@ export default function AdminSkillPath({ onBack }) {
   const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -111,10 +112,25 @@ export default function AdminSkillPath({ onBack }) {
         </div>
       </div>
       {msg && <div className="qa-toast" onClick={() => setMsg('')}>{msg}</div>}
+      {/* Filter tabs */}
+      <div className="qa-filter-bar">
+        {[
+          { key: 'all', label: 'ทั้งหมด', icon: '📋', count: templates.length },
+          { key: 'published', label: 'Published', icon: '🟢', count: templates.filter(t => t.status === 'published').length },
+          { key: 'draft', label: 'Draft', icon: '📝', count: templates.filter(t => t.status === 'draft').length },
+          { key: 'archived', label: 'Archived', icon: '📦', count: templates.filter(t => t.status === 'archived').length },
+        ].map(f => (
+          <button key={f.key} className={`qa-filter-tab ${statusFilter === f.key ? 'active' : ''}`} onClick={() => setStatusFilter(f.key)}>
+            {f.icon} {f.label} <span className="qa-filter-count">{f.count}</span>
+          </button>
+        ))}
+      </div>
       {loading ? <div className="qa-loading">⏳ กำลังโหลด...</div> : (
         <div className="qa-quest-grid">
-          {templates.length === 0 && <div className="qa-empty">🗺️ ยังไม่มี Quest — สร้าง Quest แรกของคุณเลย!</div>}
-          {templates.map(t => {
+          {(() => {
+            const filtered = statusFilter === 'all' ? templates : templates.filter(t => t.status === statusFilter);
+            if (filtered.length === 0) return <div className="qa-empty">🗺️ {statusFilter === 'all' ? 'ยังไม่มี Quest — สร้าง Quest แรกของคุณเลย!' : `ไม่มี Quest ที่เป็น ${statusFilter}`}</div>;
+            return filtered.map(t => {
             const statusMap = { draft: { icon: '📝', label: 'Draft', cls: 'draft' }, published: { icon: '🟢', label: 'Live', cls: 'live' }, archived: { icon: '📦', label: 'Archived', cls: 'archived' } };
             const st = statusMap[t.status] || statusMap.draft;
             return (
@@ -139,7 +155,8 @@ export default function AdminSkillPath({ onBack }) {
                 </div>
               </div>
             );
-          })}
+          });
+          })()}
         </div>
       )}
     </div>
